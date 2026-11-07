@@ -20,6 +20,9 @@ public class AutenticacionController {
     @Autowired
     private AutenticacionService autenticacionService;
 
+    @Autowired
+    private com.example.AppSegurity.Repositorys.EstudianteRepository estudianteRepository;
+
     //Metodos Post
     @PostMapping("/login/estudiante")
     public ResponseEntity<?> loginEstudiante(@RequestBody LoginRequest loginRequest) {
@@ -28,7 +31,12 @@ public class AutenticacionController {
             String token = autenticacionService.loginEstudiante(loginRequest.getEmail(), loginRequest.getPassword());
             Map<String, String> response = new HashMap<>();
             response.put("token", token);
+            boolean debeCambiar = estudianteRepository.findByEmailIgnoreCase(loginRequest.getEmail()).stream()
+                    .anyMatch(com.example.AppSegurity.Models.Estudiante::isClaveTemporal);
+            response.put("claveTemporal", String.valueOf(debeCambiar));      // la app obliga a elegir una clave propia
             return ResponseEntity.ok(response);
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body("Error de autenticación: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Error de autenticación: "+e.getMessage());
         }
@@ -58,6 +66,8 @@ public class AutenticacionController {
                 response.put("nombre", ((prof.getNombre() != null ? prof.getNombre() : "") + " " + (prof.getApellidos() != null ? prof.getApellidos() : "")).trim());
             }
             return ResponseEntity.ok(response);
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body("Error de autenticación: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Error de autenticación: "+e.getMessage());
         }
@@ -93,6 +103,8 @@ public class AutenticacionController {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(409).body(Map.of("exito", false, "mensaje", e.getMessage()));
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("exito", false, "mensaje", "Error interno al procesar el registro: " + e.getMessage()));
         }
@@ -110,6 +122,8 @@ public class AutenticacionController {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("exito", false, "mensaje", "No se pudo completar el registro: " + e.getMessage()));
         }
@@ -127,6 +141,8 @@ public class AutenticacionController {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("exito", false, "mensaje", "No se pudo completar el registro: " + e.getMessage()));
         }
@@ -146,6 +162,8 @@ public class AutenticacionController {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("exito", false, "mensaje", "Error al procesar la recuperación: " + e.getMessage()));
         }
@@ -163,6 +181,8 @@ public class AutenticacionController {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", e.getMessage()));
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("exito", false, "mensaje", "Error al actualizar la contraseña: " + e.getMessage()));
         }

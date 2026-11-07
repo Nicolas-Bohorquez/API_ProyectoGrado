@@ -31,7 +31,13 @@ public class ExamenService {
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    public void bulkInscribirEstudiantes(String codigoExamen, List<com.example.AppSegurity.Models.Estudiante> estudiantesCsv) {
+    /**
+     * Inscribe estudiantes en el examen. A los que no tienen cuenta se les crea una con una clave temporal ALEATORIA y
+     * distinta para cada uno (antes todos recibían "123456", así que cualquiera podía entrar como cualquier compañero).
+     * Devuelve las credenciales de las cuentas NUEVAS para que el docente las entregue; el estudiante debe cambiarla al entrar.
+     */
+    public List<java.util.Map<String, String>> bulkInscribirEstudiantes(String codigoExamen, List<com.example.AppSegurity.Models.Estudiante> estudiantesCsv) {
+        List<java.util.Map<String, String>> credencialesNuevas = new ArrayList<>();
         Examen examen = examenRepository.findById(codigoExamen).orElseThrow(() -> new RuntimeException("Examen no encontrado"));
         String materiaCodigo = examen.getMateriaCodigo();
         
@@ -58,7 +64,9 @@ public class ExamenService {
                 }
             } else {
                 est.setEstudianteId("EST-" + est.getCedula());
-                est.setPasswordHash(passwordEncoder.encode("123456"));
+                String claveTemporal = com.example.AppSegurity.Security.GeneradorClaves.claveTemporal();
+                est.setPasswordHash(passwordEncoder.encode(claveTemporal));
+                est.setClaveTemporal(true);
                 est.setEstadoUsuario(com.example.AppSegurity.Enums.EstadoUsuario.ACTIVO);
                 
                 com.example.AppSegurity.Sub_Clases.Materia m = new com.example.AppSegurity.Sub_Clases.Materia();
@@ -74,8 +82,17 @@ public class ExamenService {
                 est.setAuditoria(aud);
                 
                 estudianteRepository.save(est);
+
+                java.util.Map<String, String> credencial = new java.util.LinkedHashMap<>();
+                credencial.put("estudianteId", est.getEstudianteId());
+                credencial.put("nombre", ((est.getNombre() == null ? "" : est.getNombre()) + " " + (est.getApellidos() == null ? "" : est.getApellidos())).trim());
+                credencial.put("email", est.getEmail());
+                credencial.put("cedula", est.getCedula());
+                credencial.put("claveTemporal", claveTemporal);
+                credencialesNuevas.add(credencial);
             }
         }
+        return credencialesNuevas;
     }
 
     public Examen crearExamen(String codigoExamen, String codigoProfesor, String materiaCodigo, FechaExamen fecha) {

@@ -25,6 +25,11 @@ public class SesionSupervision {
     private AnalisisGlobal_IA analisisGlobalIA;
     private ReporteFinal reporteFinal;
     private Proceso_apelacion apelacion;
+
+    // Clave AES (Fernet) de ESTA sesión para cifrar el video, las evidencias y la voz. En la base de datos se guarda cifrada con
+    // la llave del servidor; hacia el cliente sale descifrada como "claveSesion" (solo al estudiante dueño y a su docente).
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String claveSesionCifrada;
     
     @org.springframework.data.annotation.Transient
     private String nombreEstudiante;
@@ -40,7 +45,25 @@ public class SesionSupervision {
     
     //Constructor sin parametros
     public SesionSupervision(){
-        
+    }
+
+    /** Clave de la sesión en claro (para entregarla por HTTPS a quien corresponde). Nunca se loguea. */
+    @com.fasterxml.jackson.annotation.JsonProperty("claveSesion")
+    public String getClaveSesion() {
+        if (claveSesionCifrada == null || claveSesionCifrada.isBlank()) return null;
+        try {
+            return com.example.AppSegurity.Security.AESEncryptionUtil.desencriptarDatoSensible(claveSesionCifrada);
+        } catch (RuntimeException e) {
+            return null;        // llave del servidor cambiada: la sesión sigue listándose, solo sin clave (nunca un error 500)
+        }
+    }
+
+    /** Genera la clave de la sesión si todavía no tiene (sesiones nuevas y antiguas). Devuelve true si la creó. */
+    public boolean asegurarClaveSesion() {
+        if (claveSesionCifrada != null && !claveSesionCifrada.isBlank()) return false;
+        claveSesionCifrada = com.example.AppSegurity.Security.AESEncryptionUtil.encriptarDatoSensible(
+                com.example.AppSegurity.Security.GeneradorClaves.claveFernet());
+        return true;
     }
     
     //Constructor con parametros

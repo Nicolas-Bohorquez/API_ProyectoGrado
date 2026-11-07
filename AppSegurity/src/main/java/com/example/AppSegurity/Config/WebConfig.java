@@ -13,6 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*") // Permite peticiones de cualquier origen (Python/PyQt6)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true); //Permite enviar tokens de autorización
+                .allowCredentials(false); //El JWT viaja en la cabecera Authorization, no se usan cookies
     }
 }

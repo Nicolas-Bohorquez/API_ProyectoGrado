@@ -3,6 +3,7 @@ package com.example.AppSegurity.Security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,6 +41,17 @@ public class ConfiguracionSeguridad {
                 .requestMatchers("/api/profesor/**").hasAnyRole("PROFESOR", "ADMIN", "SUPERADMIN")
                 //Solo para los estudiantes
                 .requestMatchers("/api/estudiante/**").hasRole("ESTUDIANTE")
+                // Rutas que usa la app del estudiante durante el examen (cualquier usuario autenticado)
+                .requestMatchers(HttpMethod.POST, "/api/supervision/iniciar").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/finalizar").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/heartbeat").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/interrumpir").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/supervision/reglas/*").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/apelaciones/*/solicitar").authenticated()
+                // El resto de supervisión, exámenes y apelaciones es solo del personal docente
+                .requestMatchers("/api/examenes/**", "/api/supervision/**", "/api/apelaciones/**")
+                    .hasAnyRole("PROFESOR", "ADMIN", "SUPERADMIN")
                 // Cualquier otra ruta de la API (Ej: /api/examenes) exigirá que el token sea válido
                 .anyRequest().authenticated()
             )

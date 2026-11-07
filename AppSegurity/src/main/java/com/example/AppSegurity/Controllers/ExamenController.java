@@ -21,10 +21,13 @@ public class ExamenController {
 
     @Autowired
     private ExamenService examenService;
+    @Autowired
+    private com.example.AppSegurity.Security.AutorizacionService autorizacion;
 
     //Metodos Post
     @PostMapping("/crearExamen")
-    public ResponseEntity<?> crearExamen(@RequestBody Examen peticionExamen) {
+    public ResponseEntity<?> crearExamen(@RequestBody Examen peticionExamen, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirMismoProfesor(authentication, peticionExamen.getProfesorId());      // solo puede crear exámenes a su nombre
         try {
             //Creamos el examen y lo guardamos en una variable Examen
             Examen examenCreado = examenService.crearExamen(peticionExamen.getCodigoExamen(), peticionExamen.getProfesorId(),
@@ -38,7 +41,8 @@ public class ExamenController {
     }
 
     @PutMapping("/{codigoExamen}/configurar")
-    public ResponseEntity<?> configurarRestriccionesExamen(@PathVariable String codigoExamen, @RequestBody java.util.Map<String, Object> payload) {
+    public ResponseEntity<?> configurarRestriccionesExamen(@PathVariable String codigoExamen, @RequestBody java.util.Map<String, Object> payload, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
             Examen examenConfigurado = examenService.configurarDesdeMapa(codigoExamen, payload);
             return ResponseEntity.ok(examenConfigurado);
@@ -48,7 +52,8 @@ public class ExamenController {
     }
 
     @PostMapping("/{codigoExamen}/abrir")
-    public ResponseEntity<?> abrirSalaExamen(@PathVariable String codigoExamen) {
+    public ResponseEntity<?> abrirSalaExamen(@PathVariable String codigoExamen, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
             //Abrimos el examen mediante su codigo 
             examenService.abrirSalaExamen(codigoExamen);
@@ -60,7 +65,8 @@ public class ExamenController {
     }
     
     @PostMapping("/{codigoExamen}/cerrar")
-    public ResponseEntity<?> cerrarSalaExamen(@PathVariable String codigoExamen) {
+    public ResponseEntity<?> cerrarSalaExamen(@PathVariable String codigoExamen, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
             //cerramos el examen mediante su codigo 
             examenService.cerrarSalaExamen(codigoExamen);
@@ -73,7 +79,8 @@ public class ExamenController {
     
     //Metodo GET
     @GetMapping("/profesor/{profesorId}")
-    public ResponseEntity<?> obtenerExamenesProfesor(@PathVariable String profesorId){
+    public ResponseEntity<?> obtenerExamenesProfesor(@PathVariable String profesorId, org.springframework.security.core.Authentication authentication){
+        autorizacion.exigirMismoProfesor(authentication, profesorId);
         try {
             //Obtenemos todos los examenes del profesor y lo guardamos en una lista para mandarselo al profesor
             List<Examen> examenes_profesor = examenService.obtenerExamenesProfesor(profesorId);
@@ -86,10 +93,14 @@ public class ExamenController {
     }
     
     @PostMapping("/{codigoExamen}/estudiantes/bulk")
-    public ResponseEntity<?> bulkUploadEstudiantes(@PathVariable String codigoExamen, @RequestBody List<com.example.AppSegurity.Models.Estudiante> estudiantes) {
+    public ResponseEntity<?> bulkUploadEstudiantes(@PathVariable String codigoExamen, @RequestBody List<com.example.AppSegurity.Models.Estudiante> estudiantes, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
-            examenService.bulkInscribirEstudiantes(codigoExamen, estudiantes);
-            return ResponseEntity.ok("Estudiantes inscritos correctamente");
+            java.util.List<java.util.Map<String, String>> credenciales = examenService.bulkInscribirEstudiantes(codigoExamen, estudiantes);
+            java.util.Map<String, Object> respuesta = new java.util.LinkedHashMap<>();
+            respuesta.put("mensaje", "Estudiantes inscritos correctamente");
+            respuesta.put("credenciales", credenciales);          // solo las cuentas nuevas, con su clave temporal
+            return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
             return ResponseEntity.status(400).body("Error al inscribir estudiantes: " + e.getMessage());
         }
@@ -99,7 +110,8 @@ public class ExamenController {
     @PutMapping("/{codigoExamen}/analisis-ia")
     public ResponseEntity<?> guardarAnalisisIA(
             @PathVariable String codigoExamen,
-            @RequestBody com.example.AppSegurity.Sub_Clases.AnalisisGlobal_IA analisis) {
+            @RequestBody com.example.AppSegurity.Sub_Clases.AnalisisGlobal_IA analisis, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
             com.example.AppSegurity.Models.Examen examen = examenService.obtenerExamenPorId(codigoExamen);
             if (examen == null) {
@@ -115,7 +127,8 @@ public class ExamenController {
 
     // Obtener el análisis global de la IA del examen
     @GetMapping("/{codigoExamen}/analisis-ia")
-    public ResponseEntity<?> obtenerAnalisisIA(@PathVariable String codigoExamen) {
+    public ResponseEntity<?> obtenerAnalisisIA(@PathVariable String codigoExamen, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
             com.example.AppSegurity.Models.Examen examen = examenService.obtenerExamenPorId(codigoExamen);
             if (examen == null) {

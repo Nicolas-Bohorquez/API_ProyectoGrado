@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/apelaciones")
 public class ApelacionController {
     @Autowired ApelacionService apelacionService;
+    @Autowired com.example.AppSegurity.Security.AutorizacionService autorizacion;
     
     
    @PostMapping("/{sesionId}/solicitar")
-    public ResponseEntity<String> solicitarApelacion(@PathVariable String sesionId, @RequestBody String argumentoEstudiante) {
+    public ResponseEntity<String> solicitarApelacion(@PathVariable String sesionId, @RequestBody String argumentoEstudiante, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             //Llamamos a apelacionService para solicitar la apelación del estudiante
             apelacionService.solicitarApelacion(sesionId, argumentoEstudiante);
@@ -35,7 +37,8 @@ public class ApelacionController {
     }
 
     @GetMapping("/profesor/{profesorId}/pendientes")
-    public ResponseEntity<?> obtenerPendientes(@PathVariable String profesorId) {
+    public ResponseEntity<?> obtenerPendientes(@PathVariable String profesorId, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirMismoProfesor(authentication, profesorId);
         try {
             //Buscamos y obtenemos la lista de sesiones que tienen una apelación pendiente para el profesor
             List<SesionSupervision> apelaciones = apelacionService.obtenerApelacionesPendientes(profesorId);
@@ -47,7 +50,8 @@ public class ApelacionController {
         }
     }
     @PutMapping("/{sesionId}/resolver")
-    public ResponseEntity<String> resolverApelacion(@PathVariable String sesionId, @RequestParam String resolucionComite, @RequestParam EstadoApelacion estadoApelacion) {
+    public ResponseEntity<String> resolverApelacion(@PathVariable String sesionId, @RequestParam String resolucionComite, @RequestParam EstadoApelacion estadoApelacion, org.springframework.security.core.Authentication authentication) {
+        autorizacion.exigirAccesoASesion(authentication, sesionId);
         
         try {
             //Llamamos al método para terminar la apelacion del estudiante

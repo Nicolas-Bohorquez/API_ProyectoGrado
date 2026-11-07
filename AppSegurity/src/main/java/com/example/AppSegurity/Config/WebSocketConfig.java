@@ -10,6 +10,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private StompAutorizacionInterceptor stompAutorizacion;
+
+    // Cada mensaje que envía un cliente (conectar, suscribirse, publicar) pasa antes por la autorización por propiedad
+    @Override
+    public void configureClientInboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
+        registration.interceptors(stompAutorizacion);
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Por aquí viajaran las alertas hacia el profesor en tiempo real (Ej: /topic/alertas)

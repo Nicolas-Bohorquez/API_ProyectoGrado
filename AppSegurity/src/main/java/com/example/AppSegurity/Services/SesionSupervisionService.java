@@ -159,6 +159,7 @@ public class SesionSupervisionService {
                     if (conexionInfo != null) {
                         s.setConexion(conexionInfo);
                     }
+                    s.asegurarClaveSesion();            // una sesión anterior a este cambio recibe su clave al reanudarse
                     sesionSupervisionRepository.save(s);
 
                     try {
@@ -199,6 +200,7 @@ public class SesionSupervisionService {
         nuevaSesion.setEstudianteId(estudiante.getEstudianteId());
         nuevaSesion.setConexion(conexionInfo);
         nuevaSesion.setEstadoSesion(EstadoSesion.INICIADA);
+        nuevaSesion.asegurarClaveSesion();          // clave propia de esta sesión (ya no hay una clave fija para todos)
 
         //Se guarda todo en la base de datos
         SesionSupervision guardada = sesionSupervisionRepository.save(nuevaSesion);
@@ -252,6 +254,15 @@ public class SesionSupervisionService {
     }
 
     public void registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
+        //La clase decide cómo se guarda la alerta: sin ella (o con un valor desconocido) se rechaza con un mensaje claro
+        if (alertaRequest.getClaseAlerta() == null) {
+            throw new RuntimeException("claseAlerta ausente o desconocida");
+        }
+        //El nivel de riesgo es opcional para el cliente: por defecto MEDIO
+        if (alertaRequest.getNivelRiesgo() == null) {
+            alertaRequest.setNivelRiesgo(com.example.AppSegurity.Enums.NivelRiesgo.MEDIO);
+        }
+
         //Validamos primero que nada que la sesionSupervision exista en la base de datos
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new RuntimeException("La sesión no existe"));

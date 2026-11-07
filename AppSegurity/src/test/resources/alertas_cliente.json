@@ -1,0 +1,1009 @@
+[
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "ROSTRO_PERDIDO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ROSTRO_NO_DETECTADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "ROSTRO_PERDIDO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ROSTRO_NO_DETECTADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "ROSTRO_PERDIDO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ROSTRO_NO_DETECTADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "ROSTRO_PERDIDO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ROSTRO_NO_DETECTADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "MULTIPLES_ROSTROS",
+  "cantidadRostros": 2,
+  "objetoDetectado": "MULTIPLES_ROSTROS",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "MULTIPLES_ROSTROS",
+  "cantidadRostros": 2,
+  "objetoDetectado": "MULTIPLES_ROSTROS",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "MULTIPLES_ROSTROS",
+  "cantidadRostros": 2,
+  "objetoDetectado": "MULTIPLES_ROSTROS",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "MULTIPLES_ROSTROS",
+  "cantidadRostros": 2,
+  "objetoDetectado": "MULTIPLES_ROSTROS",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "MIRADA_LATERAL_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CABEZA_INCLINADA_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_DERECHA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "GIRO_SOSPECHOSO_IZQUIERDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ESTUDIANTE_LEVANTANDOSE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ESTUDIANTE_LEVANTANDOSE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ESTUDIANTE_LEVANTANDOSE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "ESTUDIANTE_LEVANTANDOSE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "DESATENCION_PROLONGADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "DESATENCION_PROLONGADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "DESATENCION_PROLONGADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "DESATENCION_PROLONGADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_CELULAR",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_CELULAR",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_CELULAR",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_CELULAR",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_LIBRO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_LIBRO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_LIBRO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_LIBRO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_COMPUTADORA_PORTATIL",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_COMPUTADORA_PORTATIL",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_COMPUTADORA_PORTATIL",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "OBJETO",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "OBJETO_SOSPECHOSO_COMPUTADORA_PORTATIL",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null,
+  "confianzaIa": 0.5
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_ROSTRO_ESTATICO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_ROSTRO_ESTATICO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_ROSTRO_ESTATICO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_ROSTRO_ESTATICO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_IDENTIDAD",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_IDENTIDAD",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_IDENTIDAD",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "SUPLANTACION_IDENTIDAD",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "IDENTIDAD_NO_VERIFICABLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "IDENTIDAD_NO_VERIFICABLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "IDENTIDAD_NO_VERIFICABLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "SUPLANTACION_IDENTIDAD",
+  "cantidadRostros": 0,
+  "objetoDetectado": "IDENTIDAD_NO_VERIFICABLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_MIRANDO_A_UN_LADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_MIRANDO_A_UN_LADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_MIRANDO_A_UN_LADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_MIRANDO_A_UN_LADO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_CON_OTRA_PERSONA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_CON_OTRA_PERSONA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_CON_OTRA_PERSONA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "HABLANDO_CON_OTRA_PERSONA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "VOZ_SIN_MOVIMIENTO_DE_BOCA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "VOZ_SIN_MOVIMIENTO_DE_BOCA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "VOZ_SIN_MOVIMIENTO_DE_BOCA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "VOZ_SIN_MOVIMIENTO_DE_BOCA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CELULAR_Y_MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CELULAR_Y_MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CELULAR_Y_MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CELULAR_Y_MIRADA_ABAJO",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_OBSTRUIDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_OBSTRUIDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_OBSTRUIDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_OBSTRUIDA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_DESCONECTADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_DESCONECTADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_DESCONECTADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_DESCONECTADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_CONGELADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_CONGELADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_CONGELADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "CAMARA_OBSTRUIDA",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "CAMARA_OBSTRUIDA",
+  "cantidadRostros": 0,
+  "objetoDetectado": "CAMARA_CONGELADA",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "MEDIO",
+  "pidProceso": 0,
+  "nombreProceso": "REGISTRO_BIOMETRICO_ACTUALIZADO",
+  "accionTomada": "ADVERTENCIA_MOSTRADA"
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 0,
+  "nombreProceso": "MOTOR_IA_NO_RESPONDE",
+  "accionTomada": "ADVERTENCIA_MOSTRADA"
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 0,
+  "nombreProceso": "MICROFONO_SILENCIADO",
+  "accionTomada": "ADVERTENCIA_MOSTRADA"
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 0,
+  "nombreProceso": "MICROFONO_NO_DISPONIBLE",
+  "accionTomada": "ADVERTENCIA_MOSTRADA"
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 0,
+  "nombreProceso": "VAD_NO_DISPONIBLE",
+  "accionTomada": "ADVERTENCIA_MOSTRADA"
+ },
+ {
+  "claseAlerta": "PROCESO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 1234,
+  "nombreProceso": "discord.exe",
+  "categoriaProceso": "CHAT",
+  "accionTomada": "BLOQUEADO",
+  "urlCapturaPantalla": "AAAA"
+ },
+ {
+  "claseAlerta": "AUDIO",
+  "nivelRiesgo": "ALTO",
+  "vocesDetectadas": 1,
+  "confianzaVoz": 0.93,
+  "transcripcion": "Actividad vocal prolongada detectada (Clip de 6.2s)",
+  "urlAudio": "AAAA"
+ },
+ {
+  "claseAlerta": "TECLADO",
+  "nivelRiesgo": "ALTO",
+  "combinacionTeclas": "Intento de Copiar (Ctrl+C)",
+  "patronSospechoso": "USO_PROHIBIDO",
+  "urlCapturaPantalla": "AAAA"
+ }
+]

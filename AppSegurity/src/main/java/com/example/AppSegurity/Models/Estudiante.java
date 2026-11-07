@@ -25,7 +25,8 @@ public class Estudiante {
     private String cedula;
     private String email;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String passwordHash;
+    private String passwordHash;     // nunca se devuelve por la API
+    private boolean claveTemporal;   // true: la clave la generó el sistema y el estudiante debe cambiarla al entrar
     private EstadoUsuario estadoUsuario;
     private List<Materia> materiasInscritas;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

@@ -494,7 +494,4 @@ public class AutenticacionService {
 
     }
 
-    public void cerrarSesion() {
-        System.out.println("Petición de cerrar sesión recibida. El cliente debe destruir su token localmente.");
-    }
 }

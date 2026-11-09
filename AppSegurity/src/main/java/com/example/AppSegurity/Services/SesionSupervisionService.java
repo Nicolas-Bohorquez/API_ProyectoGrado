@@ -322,6 +322,9 @@ public class SesionSupervisionService {
             alertaGuardar.setHashWebcam(alertaRequest.getHashWebcam());
             alertaGuardar.setHashPantalla(alertaRequest.getHashPantalla());
             alertaGuardar.setHashAudio(alertaRequest.getHashAudio());
+            // Explicación en texto: sin espacios sobrantes y con un tope, para que nadie llene la base con textos enormes
+            String detalleAlerta = alertaRequest.getDetalle() == null ? "" : alertaRequest.getDetalle().strip();
+            alertaGuardar.setDetalle(detalleAlerta.isEmpty() ? null : detalleAlerta.substring(0, Math.min(detalleAlerta.length(), 600)));
             alertaGuardar.setSesionId(sesionId);
             alertaGuardar.setClaseAlerta(alertaRequest.getClaseAlerta());
             alertaGuardar.setNivelRiesgo(alertaRequest.getNivelRiesgo());

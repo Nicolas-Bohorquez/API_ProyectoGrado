@@ -130,6 +130,24 @@ class AlertasVisionTests {
 
 	@Test
 	@WithMockUser(username = CORREO, roles = "ESTUDIANTE")
+	void laExplicacionDeLaAlertaSeGuardaConSuTopeYLlegaAlDocente() throws Exception {
+		String texto = "Intento de abrir la barra de juegos de Xbox (Win+G): se bloqueó.";
+		assertEquals(200, enviar("{\"claseAlerta\":\"TECLADO\",\"nivelRiesgo\":\"ALTO\",\"combinacionTeclas\":\"Win+G\","
+				+ "\"patronSospechoso\":\"ATAJO_PROHIBIDO\",\"detalle\":\"  " + texto + "  \"}"));
+		assertEquals(200, enviar("{\"claseAlerta\":\"ENTORNO\",\"nivelRiesgo\":\"ALTO\",\"nombreProceso\":\"PATRON_SONDEO_DEL_EXAMEN\","
+				+ "\"accionTomada\":\"ADVERTENCIA_MOSTRADA\",\"detalle\":\"" + "x".repeat(5000) + "\"}"));
+		assertEquals(200, enviar("{\"claseAlerta\":\"ENTORNO\",\"nivelRiesgo\":\"MEDIO\",\"nombreProceso\":\"MOTOR_IA_NO_RESPONDE\",\"detalle\":\"   \"}"));
+		assertEquals(200, enviar("{\"claseAlerta\":\"ENTORNO\",\"nivelRiesgo\":\"MEDIO\",\"nombreProceso\":\"MICROFONO_SILENCIADO\"}"));
+		List<AlertaEvidencia> guardadas = alertas.findBySesionIdOrderByHoraCapturaAsc(SESION);
+		assertEquals(4, guardadas.size());
+		assertEquals(texto, guardadas.get(0).getDetalle(), "se guarda sin espacios sobrantes");
+		assertEquals(600, guardadas.get(1).getDetalle().length(), "tope de 600 caracteres");
+		assertEquals(null, guardadas.get(2).getDetalle(), "un texto en blanco no se guarda");
+		assertEquals(null, guardadas.get(3).getDetalle(), "sin explicación sigue funcionando como antes");
+	}
+
+	@Test
+	@WithMockUser(username = CORREO, roles = "ESTUDIANTE")
 	void unEnumDesconocidoYaNoRechazaLaAlertaCompleta() throws Exception {
 		// Una app más nueva que el servidor no debe perder alertas: el valor desconocido toma el valor por defecto
 		String carga = "{\"claseAlerta\":\"VISION\",\"nivelRiesgo\":\"GRAVISIMO\",\"tipoEvidenciaVision\":\"TIPO_FUTURO\","

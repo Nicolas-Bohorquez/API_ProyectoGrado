@@ -43,6 +43,9 @@ public class NuevaAlertaRequest {
     private CategoriaProceso categoriaProceso;
     private AccionTomada accionTomada;
     
+    //Explicación en texto de la alerta (opcional, de cualquier clase): qué ocurrió y por qué se avisa. Se recorta al guardar.
+    private String detalle;
+
     //Campos de una alerta de tipo teclado
     private String combinacionTeclas;
     private String patronSospechoso;

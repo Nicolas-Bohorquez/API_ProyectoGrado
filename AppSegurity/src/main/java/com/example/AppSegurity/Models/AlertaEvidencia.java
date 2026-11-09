@@ -20,6 +20,8 @@ public class AlertaEvidencia {
     private ClaseAlerta claseAlerta;
     private LocalDateTime horaCaptura;
     private NivelRiesgo nivelRiesgo;
+    // Explicación en texto de la alerta (opcional). Las alertas antiguas no la tienen.
+    private String detalle;
     
     //Hashes de integridad de evidencias (E2EE)
     private String hashWebcam;

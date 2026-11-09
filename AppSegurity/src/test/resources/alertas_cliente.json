@@ -948,6 +948,42 @@
   "urlCapturaPantalla": null
  },
  {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "BAJO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "POSIBLE_VIDEO_EN_BUCLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "MEDIO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "POSIBLE_VIDEO_EN_BUCLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "ALTO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "POSIBLE_VIDEO_EN_BUCLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
+  "claseAlerta": "VISION",
+  "nivelRiesgo": "CRITICO",
+  "tipoEvidenciaVision": "WEBCAM_OBJETO",
+  "cantidadRostros": 0,
+  "objetoDetectado": "POSIBLE_VIDEO_EN_BUCLE",
+  "urlFotoWebcam": "AAAA",
+  "urlCapturaPantalla": null
+ },
+ {
   "claseAlerta": "ENTORNO",
   "nivelRiesgo": "MEDIO",
   "pidProceso": 0,
@@ -1042,6 +1078,38 @@
   "nombreProceso": "CONEXION_RESTABLECIDA",
   "accionTomada": "ADVERTENCIA_MOSTRADA",
   "detalle": "La conexión se restableció tras 75 s sin red."
+ },
+ {
+  "claseAlerta": "ENTORNO",
+  "nivelRiesgo": "ALTO",
+  "pidProceso": 0,
+  "nombreProceso": "NAVEGACION_FUERA_DE_DOMINIO",
+  "categoriaProceso": "CONTROL_REMOTO",
+  "accionTomada": "BLOQUEADO",
+  "detalle": "Desde el navegador del examen se intentó abrir www.google.com/search, que no está autorizado."
+ },
+ {
+  "claseAlerta": "CONTROL_REMOTO",
+  "nivelRiesgo": "CRITICO",
+  "pidProceso": 0,
+  "nombreProceso": "CONTROL_REMOTO_DETECTADO: AnyDesk (anydesk.exe)",
+  "categoriaProceso": "CONTROL_REMOTO",
+  "accionTomada": "BLOQUEADO",
+  "urlCapturaPantalla": "AAAA",
+  "urlFotoWebcam": "AAAA",
+  "detalle": "El estudiante tiene en ejecución AnyDesk durante el examen. Se cerró automáticamente."
+ },
+ {
+  "claseAlerta": "TECLADO",
+  "nivelRiesgo": "ALTO",
+  "combinacionTeclas": "Win+G",
+  "patronSospechoso": "ATAJO_PROHIBIDO",
+  "pidProceso": 0,
+  "nombreProceso": "GAME_BAR_BLOQUEADO",
+  "categoriaProceso": "CONTROL_REMOTO",
+  "accionTomada": "BLOQUEADO",
+  "urlFotoWebcam": "AAAA",
+  "detalle": "Win+G: se bloqueó. La foto es de la webcam de ese instante."
  },
  {
   "claseAlerta": "ENTORNO",

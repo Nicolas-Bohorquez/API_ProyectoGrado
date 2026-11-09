@@ -193,6 +193,8 @@ public class SesionSupervisionService {
                  throw new RuntimeException("Has alcanzado el limite maximo de intentos permitidos.");
              }
         }
+        // Sesiones anteriores del estudiante (de cualquier examen), antes de crear esta: para detectar primer examen / equipo nuevo
+        List<SesionSupervision> sesionesDelEstudiante = sesionSupervisionRepository.findAllByEstudianteId(estudiante.getEstudianteId());
         SesionSupervision nuevaSesion = new SesionSupervision();
         nuevaSesion.setExamenId(examen.getCodigoExamen());
         nuevaSesion.setEstudianteId(estudiante.getEstudianteId());
@@ -213,8 +215,59 @@ public class SesionSupervisionService {
                 evento
             );
         } catch (Exception e) {}
+
+        avisarEquipo(guardada.getSesionId(), evaluarEquipo(sesionesDelEstudiante, conexionInfo != null ? conexionInfo.getDeviceId() : null));
         
         return guardada;
+    }
+
+    /**
+     * Ayuda a detectar suplantaciones: el rostro de referencia lo registra quien esté frente al equipo la PRIMERA vez, y en un equipo
+     * nuevo se registra otro. Devuelve "PRIMER_EXAMEN_DEL_ESTUDIANTE" si nunca había tenido una sesión,
+     * "EQUIPO_NUEVO_PARA_EL_ESTUDIANTE" si ya tenía sesiones pero ninguna desde este equipo, o null (nada que avisar).
+     */
+    static String evaluarEquipo(List<SesionSupervision> previas, String deviceIdEntrante) {
+        if (previas == null || previas.isEmpty()) {
+            return "PRIMER_EXAMEN_DEL_ESTUDIANTE";
+        }
+        if (deviceIdEntrante == null || deviceIdEntrante.isBlank()) {
+            return null;
+        }
+        boolean algunoIdentificado = false;
+        for (SesionSupervision s : previas) {
+            String dev = (s.getConexion() != null) ? s.getConexion().getDeviceId() : null;
+            if (dev != null && !dev.isBlank()) {
+                algunoIdentificado = true;
+                if (dev.equalsIgnoreCase(deviceIdEntrante)) {
+                    return null;
+                }
+            }
+        }
+        // Si ninguna sesión anterior tenía identificador de equipo no se puede afirmar que sea nuevo
+        return algunoIdentificado ? "EQUIPO_NUEVO_PARA_EL_ESTUDIANTE" : null;
+    }
+
+    private void avisarEquipo(String sesionId, String evento) {
+        if (evento == null) {
+            return;
+        }
+        try {
+            boolean nuevo = "EQUIPO_NUEVO_PARA_EL_ESTUDIANTE".equals(evento);
+            NuevaAlertaRequest aviso = new NuevaAlertaRequest();
+            aviso.setClaseAlerta(ClaseAlerta.ENTORNO);
+            aviso.setNivelRiesgo(nuevo ? NivelRiesgo.MEDIO : NivelRiesgo.BAJO);
+            aviso.setPidProceso(0);
+            aviso.setNombreProceso(evento);
+            aviso.setAccionTomada(com.example.AppSegurity.Enums.AccionTomada.ADVERTENCIA_MOSTRADA);
+            aviso.setDetalle(nuevo
+                    ? "El estudiante ya había presentado exámenes, pero desde un equipo distinto al de ahora. En un equipo nuevo se registra "
+                      + "un rostro de referencia nuevo: conviene comprobar visualmente que es la misma persona."
+                    : "Es el primer examen de este estudiante en el sistema: el rostro de referencia se registró hoy en este equipo. "
+                      + "Conviene comprobar visualmente que es la persona matriculada.");
+            registrarAlerta(sesionId, aviso);
+        } catch (Exception e) {
+            // Un aviso informativo nunca debe impedir que el estudiante entre a su examen
+        }
     }
     
     public SesionSupervision obtenerSesion(String sesionId) {

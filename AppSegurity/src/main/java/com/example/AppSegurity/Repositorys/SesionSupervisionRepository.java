@@ -15,6 +15,9 @@ public interface SesionSupervisionRepository extends MongoRepository<SesionSuper
     //Buscar y obtener toda la info de la sesión de un estudiante en concreto
     Optional<SesionSupervision> findByEstudianteId(String estudianteId);
 
+    // Todas las sesiones de un estudiante (de cualquier examen): sirve para saber si es su primer examen o un equipo nuevo
+    List<SesionSupervision> findAllByEstudianteId(String estudianteId);
+
     //Buscar y obtener todas las sesiones de un examen especifico
     List<SesionSupervision> findByExamenId(String examenId);
 }

@@ -8,17 +8,22 @@ import com.example.AppSegurity.Sub_Clases.ReporteFinal;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
 
 @Document(collection = "sesion_examen")
+@CompoundIndex(name = "idx_sesion_examen_estado", def = "{'examenId': 1, 'estadoSesion': 1}")
 public class SesionSupervision {
     //Parametros de la clase
     @Id
     private String sesionId;
+    @Indexed
     private String examenId;
+    @Indexed
     private String estudianteId;
     private EstadoSesion estadoSesion;
     private Conexion conexion;

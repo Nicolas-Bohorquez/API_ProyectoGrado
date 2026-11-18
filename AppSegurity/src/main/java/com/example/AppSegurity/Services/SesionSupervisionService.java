@@ -207,10 +207,15 @@ public class SesionSupervisionService {
              throw new ErrorNegocioException("Acceso denegado: " + motivoBloqueo);
         }
         
-        if (examen.getConfiguracionExamen() != null && examen.getConfiguracionExamen().getPermitirReintentos() != null) {
-             if (intentosCompletados >= examen.getConfiguracionExamen().getPermitirReintentos()) {
+        if (examen.getConfiguracionExamen() != null) {
+            Integer maxIntentosCfg = examen.getConfiguracionExamen().getIntentosMaximos();
+            Integer reintentosRedCfg = examen.getConfiguracionExamen().getPermitirReintentos();
+            Integer limiteIntentos = maxIntentosCfg != null
+                    ? Math.max(1, maxIntentosCfg)
+                    : (reintentosRedCfg != null ? Math.max(1, reintentosRedCfg) : null);
+            if (limiteIntentos != null && intentosCompletados >= limiteIntentos) {
                  throw new ErrorNegocioException("Has alcanzado el limite maximo de intentos permitidos.");
-             }
+            }
         }
         // Sesiones anteriores del estudiante (de cualquier examen), antes de crear esta: para detectar primer examen / equipo nuevo
         List<SesionSupervision> sesionesDelEstudiante = sesionSupervisionRepository.findAllByEstudianteId(estudiante.getEstudianteId());
@@ -306,6 +311,7 @@ public class SesionSupervisionService {
                 
         String sensibilidad = "MEDIA";
         Integer duracion = 120;
+        Integer reintentosConexion = 3;
         if (examen.getConfiguracionExamen() != null) {
             if (examen.getConfiguracionExamen().getSensibilidadIA() != null) {
                 sensibilidad = examen.getConfiguracionExamen().getSensibilidadIA().toString();
@@ -313,13 +319,17 @@ public class SesionSupervisionService {
             if (examen.getConfiguracionExamen().getDuracionExamen() != null) {
                 duracion = examen.getConfiguracionExamen().getDuracionExamen();
             }
+            if (examen.getConfiguracionExamen().getPermitirReintentos() != null) {
+                reintentosConexion = Math.max(0, examen.getConfiguracionExamen().getPermitirReintentos());
+            }
         }
         
         return new com.example.AppSegurity.DTO.ReglasExamenResponse(
             examen.getConfiguracionExamen() != null ? examen.getConfiguracionExamen().getProcesosPermitidos() : new java.util.ArrayList<>(),
             examen.getConfiguracionExamen() != null ? examen.getConfiguracionExamen().getUrlsPermitidas() : new java.util.ArrayList<>(),
             sensibilidad,
-            duracion
+            duracion,
+            reintentosConexion
         );
     }
 

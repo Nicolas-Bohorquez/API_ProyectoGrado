@@ -17,6 +17,7 @@ public class ConfiguracionExamen {
     private Sensibilidad_IA sensibilidadIA; // BAJA, MEDIA O ALTA
     private Integer duracionExamen;
     private Integer permitirReintentos;
+    private Integer intentosMaximos;
     private List<String> procesosPermitidos; //Lista blanca
     private List<String> urlsPermitidas; 
 

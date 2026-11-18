@@ -9,17 +9,25 @@ import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
 
 @Document(collection = "examen")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_examen_pin", def = "{'controlAcceso.pinSesion': 1}"),
+    @CompoundIndex(name = "idx_examen_estado_fin", def = "{'controlAcceso.estadoPin': 1, 'fechaExamen.horaFin': 1}")
+})
 public class Examen {
     //Parametros de la clase
     //Id principales del examen
     @Id
     private String codigoExamen;
+    @Indexed
     private String profesorId;
     private String materiaCodigo;
     private ControlAcceso controlAcceso;

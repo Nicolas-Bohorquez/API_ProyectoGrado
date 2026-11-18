@@ -48,6 +48,10 @@ public class ConfigurarExamenRequest {
     @Max(value = 10, message = "El campo permitirReintentos no puede superar 10.")
     private Integer permitirReintentos;
 
+    @Min(value = 1, message = "El campo intentosMaximos debe ser al menos 1.")
+    @Max(value = 10, message = "El campo intentosMaximos no puede superar 10.")
+    private Integer intentosMaximos;
+
     @Size(max = 500, message = "La lista de procesos permitidos no puede superar los 500 elementos.")
     private List<@Size(max = 300, message = "Cada proceso permitido no puede superar los 300 caracteres.") String> procesosPermitidos;
 
@@ -68,6 +72,7 @@ public class ConfigurarExamenRequest {
         if (sensibilidadIA != null) datos.put("sensibilidadIA", sensibilidadIA);
         if (duracionExamen != null) datos.put("duracionExamen", duracionExamen);
         if (permitirReintentos != null) datos.put("permitirReintentos", permitirReintentos);
+        if (intentosMaximos != null) datos.put("intentosMaximos", intentosMaximos);
         if (procesosPermitidos != null) datos.put("procesosPermitidos", procesosPermitidos);
         if (urlsPermitidas != null) datos.put("urlsPermitidas", urlsPermitidas);
         return datos;

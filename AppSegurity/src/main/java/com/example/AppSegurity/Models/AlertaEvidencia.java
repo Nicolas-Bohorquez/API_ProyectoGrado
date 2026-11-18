@@ -6,18 +6,22 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 
 @Getter
 @Setter
 @Document(collection = "alerta_evidencia")
+@CompoundIndex(name = "idx_alerta_sesion_hora", def = "{'sesionId': 1, 'horaCaptura': 1}")
 public class AlertaEvidencia {
     //Parametros de la clase
     @Id
     private String idAlerta;
     private String sesionId;
     private ClaseAlerta claseAlerta;
+    @Indexed
     private LocalDateTime horaCaptura;
     private NivelRiesgo nivelRiesgo;
     // Explicación en texto de la alerta (opcional). Las alertas antiguas no la tienen.

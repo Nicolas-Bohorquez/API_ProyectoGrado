@@ -10,6 +10,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
@@ -22,7 +23,9 @@ public class Estudiante {
     private String estudianteId;
     private String nombre;
     private String apellidos;
+    @Indexed
     private String cedula;
+    @Indexed
     private String email;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passwordHash;     // nunca se devuelve por la API

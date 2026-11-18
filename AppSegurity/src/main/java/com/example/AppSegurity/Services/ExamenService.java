@@ -190,6 +190,7 @@ public class ExamenService {
         if (payload.containsKey("sensibilidadIA")) config.setSensibilidadIA(com.example.AppSegurity.Enums.Sensibilidad_IA.valueOf((String) payload.get("sensibilidadIA")));
         if (payload.containsKey("duracionExamen")) config.setDuracionExamen((Integer) payload.get("duracionExamen"));
         if (payload.containsKey("permitirReintentos")) config.setPermitirReintentos((Integer) payload.get("permitirReintentos"));
+        if (payload.containsKey("intentosMaximos")) config.setIntentosMaximos((Integer) payload.get("intentosMaximos"));
         if (payload.containsKey("procesosPermitidos")) config.setProcesosPermitidos((java.util.List<String>) payload.get("procesosPermitidos"));
         if (payload.containsKey("urlsPermitidas")) config.setUrlsPermitidas((java.util.List<String>) payload.get("urlsPermitidas"));
 
@@ -241,27 +242,28 @@ public class ExamenService {
     
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     public void verificarExamenesExpirados() {
-        List<Examen> todosExamenes = examenRepository.findAll();
         java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
-        
-        for (Examen examen : todosExamenes) {
-            if (examen.getControlAcceso() != null && examen.getControlAcceso().getEstadoPin() == Estado_pin.ACTIVO) {
-                if (examen.getFechaExamen() != null && examen.getFechaExamen().getHoraFin() != null) {
-                    if (ahora.isAfter(examen.getFechaExamen().getHoraFin())) {
-                        System.out.println("[CRON] Finalizando examen expirado: " + examen.getCodigoExamen());
-                        examen.getControlAcceso().setEstadoPin(Estado_pin.FINALIZADO);
-                        examenRepository.save(examen);
-                        
-                        // Cerrar también las sesiones activas
-                        List<com.example.AppSegurity.Models.SesionSupervision> sesionesActivas = sesionSupervisionRepository.findByExamenId(examen.getCodigoExamen());
-                        for (com.example.AppSegurity.Models.SesionSupervision sesion : sesionesActivas) {
-                            if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA) {
-                                sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
-                                sesionSupervisionRepository.save(sesion);
-                            }
-                        }
-                    }
+        List<Examen> expirados = examenRepository
+                .findByControlAccesoEstadoPinAndFechaExamenHoraFinBefore(Estado_pin.ACTIVO, ahora);
+        if (expirados.isEmpty()) {
+            return;
+        }
+        for (Examen examen : expirados) {
+            System.out.println("[CRON] Finalizando examen expirado: " + examen.getCodigoExamen());
+            examen.getControlAcceso().setEstadoPin(Estado_pin.FINALIZADO);
+            examenRepository.save(examen);
+
+            List<com.example.AppSegurity.Models.SesionSupervision> sesiones =
+                    sesionSupervisionRepository.findByExamenId(examen.getCodigoExamen());
+            List<com.example.AppSegurity.Models.SesionSupervision> porCerrar = new ArrayList<>();
+            for (com.example.AppSegurity.Models.SesionSupervision sesion : sesiones) {
+                if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA) {
+                    sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
+                    porCerrar.add(sesion);
                 }
+            }
+            if (!porCerrar.isEmpty()) {
+                sesionSupervisionRepository.saveAll(porCerrar);
             }
         }
     }

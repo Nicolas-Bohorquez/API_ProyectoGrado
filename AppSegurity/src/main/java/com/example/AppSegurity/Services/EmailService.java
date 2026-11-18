@@ -63,7 +63,7 @@ public class EmailService {
 
     @Async
     public void enviarCodigoVerificacion(String correo, String nombre, String codigoOtp, String rol) {
-        System.out.println("[REGISTRO OTP] Generado para " + correo + " (" + rol + "): " + codigoOtp);
+        System.out.println("[REGISTRO OTP] Solicitado para " + correo + " (" + rol + ")");
         try {
             MimeMessage mensaje = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
@@ -114,7 +114,7 @@ public class EmailService {
 
     @Async
     public void enviarCodigoRecuperacion(String correo, String nombre, String codigoOtp) {
-        System.out.println("[RECUPERACIÓN OTP] Generado para " + correo + ": " + codigoOtp);
+        System.out.println("[RECUPERACIÓN OTP] Solicitado para " + correo);
         try {
             MimeMessage mensaje = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");

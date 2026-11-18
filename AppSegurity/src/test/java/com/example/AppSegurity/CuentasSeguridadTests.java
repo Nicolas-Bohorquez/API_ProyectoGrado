@@ -144,7 +144,7 @@ class CuentasSeguridadTests {
 
 	@Test
 	void elCodigoOtpTiene6DigitosYNoSePuedeAdivinarPorFuerzaBruta() throws Exception {
-		String email = "otp." + sufijo + "@gmail.com";
+		String email = "otp." + sufijo + "@unicesar.edu.co";
 		correosLimitador.add(email);
 		String cedula = "9" + Math.abs(sufijo.hashCode() % 100000000);
 		String correcto = solicitarCodigo(email, cedula);
@@ -165,7 +165,7 @@ class CuentasSeguridadTests {
 
 	@Test
 	void unOtpCorrectoSiPermiteRegistrarse() throws Exception {
-		String email = "ok." + sufijo + "@gmail.com";
+		String email = "ok." + sufijo + "@unicesar.edu.co";
 		correosLimitador.add(email);
 		String cedula = "8" + Math.abs(sufijo.hashCode() % 100000000);
 		String codigo = solicitarCodigo(email, cedula);
@@ -176,7 +176,7 @@ class CuentasSeguridadTests {
 
 	@Test
 	void noSePuedenPedirCodigosSeguidosAlMismoCorreo() throws Exception {
-		String email = "spam." + sufijo + "@gmail.com";
+		String email = "spam." + sufijo + "@unicesar.edu.co";
 		correosLimitador.add(email);
 		String cedula = "7" + Math.abs(sufijo.hashCode() % 100000000);
 		solicitarCodigo(email, cedula);

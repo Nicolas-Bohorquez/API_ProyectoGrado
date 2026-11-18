@@ -118,8 +118,8 @@ public class AutenticacionService {
         String cedula = req.getCedula().trim();
         String rol = req.getRol().trim().toUpperCase();
 
-        // 1. Validar dominio institucional (@unicesar.edu.co o @gmail.com de prueba)
-        if (!email.matches("^[A-Za-z0-9._%+-]+@(unicesar\\.edu\\.co|gmail\\.com)$")) {
+        // 1. Validar dominio institucional (unicamente @unicesar.edu.co)
+        if (!email.matches("^[A-Za-z0-9._%+-]+@unicesar\\.edu\\.co$")) {
             throw new IllegalArgumentException("El correo debe pertenecer al dominio institucional (@unicesar.edu.co).");
         }
 

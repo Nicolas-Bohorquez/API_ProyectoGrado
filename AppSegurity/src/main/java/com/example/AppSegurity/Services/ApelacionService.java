@@ -9,6 +9,7 @@ import com.example.AppSegurity.Models.Estudiante;
 import com.example.AppSegurity.Repositorys.ExamenRepository;
 import com.example.AppSegurity.Repositorys.SesionSupervisionRepository;
 import com.example.AppSegurity.Repositorys.EstudianteRepository;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Sub_Clases.Proceso_apelacion;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class ApelacionService {
     public void solicitarApelacion(String sesionId, String argumentoEstudiante) {
         // Se busca el id de la sesión donde el estudiante hizo la apelación
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("No se encontró la sesión"));
+                .orElseThrow(() -> new ErrorNegocioException("No se encontró la sesión"));
 
         //Crear el proceso de apelación del estudiante
         Proceso_apelacion procesoApelacion = new Proceso_apelacion();
@@ -71,7 +72,7 @@ public class ApelacionService {
 
     public void resolverApelacion(String sesionId, Boolean decisionApelacion, String resolucionComite) {
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(); // añadir algo aqui
+                .orElseThrow(() -> new ErrorNegocioException("No se encontró la sesión"));
 
         //Extración de la apelación de la sesion del estudiante
         Proceso_apelacion procesoApelacion = sesionSupervision.getApelacion();
@@ -131,7 +132,7 @@ public class ApelacionService {
         
         // Buscamos la sesión donde ocurrió la apelación
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("La sesión no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
         
         // Verificamos que sí tenga un proceso de apelación activo
         if (sesionSupervision.getApelacion() != null) {
@@ -159,7 +160,7 @@ public class ApelacionService {
             }
             
         } else {
-            throw new RuntimeException("Esta sesión no tiene ninguna apelación solicitada.");
+            throw new ErrorNegocioException("Esta sesión no tiene ninguna apelación solicitada.");
         }
     }
 }

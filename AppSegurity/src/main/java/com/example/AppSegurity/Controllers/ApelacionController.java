@@ -2,6 +2,7 @@ package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.Enums.EstadoApelacion;
 import com.example.AppSegurity.Models.SesionSupervision;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Services.ApelacionService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/apelaciones")
 public class ApelacionController {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ApelacionController.class);
     @Autowired ApelacionService apelacionService;
     @Autowired com.example.AppSegurity.Security.AutorizacionService autorizacion;
     
@@ -31,8 +33,11 @@ public class ApelacionController {
             
             //Retornamos una respuesta de exito
             return ResponseEntity.ok("La apelación fue enviada al comité exitosamente.");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al enviar apelación: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("[APELACIONES] Error al enviar apelación ({}): {}: {}", sesionId, e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.status(500).body("Error interno al enviar la apelación.");
         }
     }
 
@@ -45,20 +50,26 @@ public class ApelacionController {
             
             //Luego retornamos esa lista de apelaciones para que el profesor pueda verlas 
             return ResponseEntity.ok(apelaciones);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al buscar apelaciones: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("[APELACIONES] Error al buscar apelaciones ({}): {}: {}", profesorId, e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.status(500).body("Error interno al buscar las apelaciones.");
         }
     }
     @PutMapping("/{sesionId}/resolver")
     public ResponseEntity<String> resolverApelacion(@PathVariable String sesionId, @RequestParam String resolucionComite, @RequestParam EstadoApelacion estadoApelacion, org.springframework.security.core.Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirDocenteDeSesion(authentication, sesionId);
         
         try {
             //Llamamos al método para terminar la apelacion del estudiante
             apelacionService.terminarApelacion(sesionId, resolucionComite, estadoApelacion);
             return ResponseEntity.ok("La apelación ha sido resuelta y cerrada.");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al resolver apelación: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("[APELACIONES] Error al resolver apelación ({}): {}: {}", sesionId, e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.status(500).body("Error interno al resolver la apelación.");
         }
     }
     

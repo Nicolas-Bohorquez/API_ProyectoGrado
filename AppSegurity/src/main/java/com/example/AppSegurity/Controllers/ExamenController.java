@@ -2,6 +2,7 @@ package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.DTO.ConfigurarExamenRequest;
 import com.example.AppSegurity.Models.Examen;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Services.ExamenService;
 import com.example.AppSegurity.Sub_Clases.ConfiguracionExamen;
 import jakarta.validation.Valid;
@@ -21,10 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 public class ExamenController {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ExamenController.class);
+
     @Autowired
     private ExamenService examenService;
     @Autowired
     private com.example.AppSegurity.Security.AutorizacionService autorizacion;
+
+    private ResponseEntity<String> errorInterno(String contexto, Exception e) {
+        LOG.error("[EXAMENES] {}: {}: {}", contexto, e.getClass().getSimpleName(), e.getMessage());
+        return ResponseEntity.status(500).body(contexto + " Intenta de nuevo más tarde.");
+    }
 
     //Metodos Post
     @PostMapping("/crearExamen")
@@ -37,8 +45,10 @@ public class ExamenController {
 
             //Retornamos el examen creado
             return ResponseEntity.status(200).body(examenCreado);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.status(400).body("Error al crear el examen: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al crear el examen.", e);
         }
     }
 
@@ -48,8 +58,10 @@ public class ExamenController {
         try {
             Examen examenConfigurado = examenService.configurarDesdeMapa(codigoExamen, payload.toMap());
             return ResponseEntity.ok(examenConfigurado);
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Error al configurar el examen: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(400).body("Error al configurr el examen: " + e.getMessage());
+            return errorInterno("Error interno al configurar el examen.", e);
         }
     }
 
@@ -61,8 +73,10 @@ public class ExamenController {
             examenService.abrirSalaExamen(codigoExamen);
 
             return ResponseEntity.ok("Sala abierta exitosamente");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error en abrir la sala del examen: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al abrir la sala del examen.", e);
         }
     }
     
@@ -74,8 +88,10 @@ public class ExamenController {
             examenService.cerrarSalaExamen(codigoExamen);
 
             return ResponseEntity.ok("Sala cerrada exitosamente");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al cerrar la sala del examen: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al cerrar la sala del examen.", e);
         }
     }
     
@@ -89,8 +105,10 @@ public class ExamenController {
             
             //retornamos esa lista de examenes al profesor
             return ResponseEntity.ok(examenes_profesor);
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Error al obtener los examenes del profesor: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(400).body("Error al obtener los examenes del profesor: "+e.getMessage());
+            return errorInterno("Error interno al obtener los exámenes del profesor.", e);
         }
     }
     
@@ -103,8 +121,10 @@ public class ExamenController {
             respuesta.put("mensaje", "Estudiantes inscritos correctamente");
             respuesta.put("credenciales", credenciales);          // solo las cuentas nuevas, con su clave temporal
             return ResponseEntity.ok(respuesta);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al inscribir estudiantes: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al inscribir estudiantes.", e);
         }
     }
 
@@ -122,8 +142,10 @@ public class ExamenController {
             examen.setAnalisisGlobalIA(analisis);
             examenService.guardarExamen(examen);
             return ResponseEntity.ok("Análisis guardado correctamente");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al guardar el análisis: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al guardar el análisis.", e);
         }
     }
 
@@ -140,8 +162,10 @@ public class ExamenController {
                 return ResponseEntity.status(204).body(null); // 204 = sin contenido, no hay análisis aún
             }
             return ResponseEntity.ok(examen.getAnalisisGlobalIA());
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al obtener el análisis: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener el análisis.", e);
         }
     }
 }

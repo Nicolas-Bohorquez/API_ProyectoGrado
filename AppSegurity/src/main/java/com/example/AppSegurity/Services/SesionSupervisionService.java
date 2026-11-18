@@ -16,6 +16,7 @@ import com.example.AppSegurity.Repositorys.AlertaEvidenciaRepository;
 import com.example.AppSegurity.Repositorys.EstudianteRepository;
 import com.example.AppSegurity.Repositorys.ExamenRepository;
 import com.example.AppSegurity.Repositorys.SesionSupervisionRepository;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Sub_Clases.AnalisisGlobal_IA;
 import com.example.AppSegurity.Sub_Clases.Conexion;
 import com.example.AppSegurity.Sub_Clases.Materia;
@@ -56,7 +57,7 @@ public class SesionSupervisionService {
         Examen examen = examenRepository.findByControlAccesoPinSesion(pinExamen).orElse(null);
         if (examen == null) {
             limitadorPin.registrarFallo(clavePin);
-            throw new RuntimeException("El PIN ingresado no existe o es incorrecto");
+            throw new ErrorNegocioException("El PIN ingresado no existe o es incorrecto");
         }
         limitadorPin.registrarExito(clavePin);
 
@@ -68,12 +69,12 @@ public class SesionSupervisionService {
         // Se trae el estudiante de la base de datos para ver las materias que tiene
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)
                 .orElseGet(() -> estudianteRepository.findByEmailIgnoreCase(idEstudiante).stream().findFirst()
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado (ID o Email: " + idEstudiante + ")")));
+                .orElseThrow(() -> new ErrorNegocioException("Estudiante no encontrado (ID o Email: " + idEstudiante + ")")));
 
         // Validamos que el profesor tenga el examen abierto (Estado_pin == ACTIVO)
         if (examen.getControlAcceso() == null || 
             examen.getControlAcceso().getEstadoPin() != com.example.AppSegurity.Enums.Estado_pin.ACTIVO) {
-            throw new RuntimeException("El examen no está activo en este momento (Cerrado por el profesor)");
+            throw new ErrorNegocioException("El examen no está activo en este momento (Cerrado por el profesor)");
         }
         
         // Validación estricta de tiempo
@@ -83,10 +84,10 @@ public class SesionSupervisionService {
             java.time.LocalDateTime horaFin = examen.getFechaExamen().getHoraFin();
             
             if (horaInicio != null && ahora.isBefore(horaInicio)) {
-                throw new RuntimeException("El examen aún no ha comenzado. Inicia a las " + horaInicio.toString());
+                throw new ErrorNegocioException("El examen aún no ha comenzado. Inicia a las " + horaInicio.toString());
             }
             if (horaFin != null && ahora.isAfter(horaFin)) {
-                throw new RuntimeException("El examen ya ha finalizado. Terminó a las " + horaFin.toString());
+                throw new ErrorNegocioException("El examen ya ha finalizado. Terminó a las " + horaFin.toString());
             }
         }
 
@@ -101,29 +102,29 @@ public class SesionSupervisionService {
 
         //En caso de que no este inscrito
         if (!esta_inscrito) {
-            throw new RuntimeException("No esta inscrito en la materia para hacer este examen");
+            throw new ErrorNegocioException("No esta inscrito en la materia para hacer este examen");
         }
 
         //Validamos la información de la conexión
         //Bloqueamos VPNs o Proxies que puedan enmascarar al estudiante
         if (conexionInfo.getVpnDetectada() != false) {
-            throw new RuntimeException("Acceso denegado: Se ha detectado una conexión VPN activa."
+            throw new ErrorNegocioException("Acceso denegado: Se ha detectado una conexión VPN activa."
                     + " Por favor desactivarla para hacer el examen");
         }
 
         // Bloqueo por Sistema Operativo ya que nuestra App de Python solo corre en Windows
         if (conexionInfo.getSistemaOperativo() != null && !conexionInfo.getSistemaOperativo().toLowerCase().contains("windows")) {
-            throw new RuntimeException("Acceso denegado: El sistema de supervisión actualmente solo es compatible con Windows.");
+            throw new ErrorNegocioException("Acceso denegado: El sistema de supervisión actualmente solo es compatible con Windows.");
         }
         
         // --- NUEVAS VALIDACIONES: FECHAS ---
         if (examen.getFechaExamen() != null) {
             java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
             if (examen.getFechaExamen().getHoraInicio() != null && ahora.isBefore(examen.getFechaExamen().getHoraInicio())) {
-                throw new RuntimeException("El examen aún no ha comenzado. Empieza a las: " + examen.getFechaExamen().getHoraInicio());
+                throw new ErrorNegocioException("El examen aún no ha comenzado. Empieza a las: " + examen.getFechaExamen().getHoraInicio());
             }
             if (examen.getFechaExamen().getHoraFin() != null && ahora.isAfter(examen.getFechaExamen().getHoraFin())) {
-                throw new RuntimeException("El tiempo límite para iniciar el examen ha concluido (" + examen.getFechaExamen().getHoraFin() + ").");
+                throw new ErrorNegocioException("El tiempo límite para iniciar el examen ha concluido (" + examen.getFechaExamen().getHoraFin() + ").");
             }
         }
 
@@ -167,7 +168,7 @@ public class SesionSupervisionService {
                             webSocketMessagingTemplate.convertAndSend((String) ("/topic/alertas/" + s.getExamenId()), (Object) evDup);
                         } catch (Exception ignored) {}
 
-                        throw new RuntimeException("Acceso denegado: Ya existe una sesión activa para este examen en otro equipo. Por motivos de integridad académica no se permite el acceso simultáneo desde múltiples dispositivos.");
+                        throw new ErrorNegocioException("Acceso denegado: Ya existe una sesión activa para este examen en otro equipo. Por motivos de integridad académica no se permite el acceso simultáneo desde múltiples dispositivos.");
                     }
 
                     // Mismo dispositivo: reconexión autorizada
@@ -203,12 +204,12 @@ public class SesionSupervisionService {
         
         // --- NUEVAS VALIDACIONES: REINTENTOS Y BLOQUEOS DE SEGURIDAD ---
         if (accesoBloqueado) {
-             throw new RuntimeException("Acceso denegado: " + motivoBloqueo);
+             throw new ErrorNegocioException("Acceso denegado: " + motivoBloqueo);
         }
         
         if (examen.getConfiguracionExamen() != null && examen.getConfiguracionExamen().getPermitirReintentos() != null) {
              if (intentosCompletados >= examen.getConfiguracionExamen().getPermitirReintentos()) {
-                 throw new RuntimeException("Has alcanzado el limite maximo de intentos permitidos.");
+                 throw new ErrorNegocioException("Has alcanzado el limite maximo de intentos permitidos.");
              }
         }
         // Sesiones anteriores del estudiante (de cualquier examen), antes de crear esta: para detectar primer examen / equipo nuevo
@@ -289,7 +290,7 @@ public class SesionSupervisionService {
     }
     
     public SesionSupervision obtenerSesion(String sesionId) {
-        SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId).orElseThrow(() -> new RuntimeException("No existe"));
+        SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId).orElseThrow(() -> new ErrorNegocioException("No existe"));
         estudianteRepository.findById(sesion.getEstudianteId()).ifPresent(est -> {
             sesion.setNombreEstudiante(est.getNombre() + " " + est.getApellidos());
             sesion.setCedula(est.getCedula());
@@ -299,9 +300,9 @@ public class SesionSupervisionService {
     
     public com.example.AppSegurity.DTO.ReglasExamenResponse obtenerReglasExamen(String sesionId) {
         SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("La sesión no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
         Examen examen = examenRepository.findById(sesion.getExamenId())
-                .orElseThrow(() -> new RuntimeException("El examen no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("El examen no existe"));
                 
         String sensibilidad = "MEDIA";
         Integer duracion = 120;
@@ -325,7 +326,7 @@ public class SesionSupervisionService {
     public void registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
         //La clase decide cómo se guarda la alerta: sin ella (o con un valor desconocido) se rechaza con un mensaje claro
         if (alertaRequest.getClaseAlerta() == null) {
-            throw new RuntimeException("claseAlerta ausente o desconocida");
+            throw new ErrorNegocioException("claseAlerta ausente o desconocida");
         }
         //El nivel de riesgo es opcional para el cliente: por defecto MEDIO
         if (alertaRequest.getNivelRiesgo() == null) {
@@ -334,10 +335,10 @@ public class SesionSupervisionService {
 
         //Validamos primero que nada que la sesionSupervision exista en la base de datos
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("La sesión no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
 
         com.example.AppSegurity.Models.Examen examen = examenRepository.findById(sesionSupervision.getExamenId())
-                .orElseThrow(() -> new RuntimeException("El examen no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("El examen no existe"));
 
         String nombreEstudiante = "Desconocido";
         var est = estudianteRepository.findById(sesionSupervision.getEstudianteId()).orElse(null);
@@ -422,7 +423,7 @@ public class SesionSupervisionService {
 
         } //En caso de que venga null reportamos una excepción
         else {
-            throw new RuntimeException("La alerta vino vacia");
+            throw new ErrorNegocioException("La alerta vino vacia");
         }
 
     }
@@ -430,7 +431,7 @@ public class SesionSupervisionService {
     public void finalizarSesion(String idSesion) {
         //Traer la info de la sesión a finalizar
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(idSesion)
-                .orElseThrow(() -> new RuntimeException("Error al encontrar la sesión a finalizar"));
+                .orElseThrow(() -> new ErrorNegocioException("Error al encontrar la sesión a finalizar"));
 
         //Se cambia el estado a finalizada
         sesionSupervision.setEstadoSesion(EstadoSesion.FINALIZADA);
@@ -471,7 +472,7 @@ public class SesionSupervisionService {
     public void guardarVeredicto_Reporte(String sesionId, AnalisisGlobal_IA analisis, String veredictoDocente, String urlPDF) {
         //Se busca la sesionSupervision en la base de datos
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("Error al encontrar la sesión"));
+                .orElseThrow(() -> new ErrorNegocioException("Error al encontrar la sesión"));
 
         //Se llena el elemento de analisis global de la ia 
         AnalisisGlobal_IA analisisGlobal_IA = analisis;
@@ -527,11 +528,11 @@ public class SesionSupervisionService {
 
     public SesionSupervision registrarHeartbeat(String sesionId, String deviceId) {
         SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("La sesión no existe"));
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
 
         if (deviceId != null && sesion.getConexion() != null && sesion.getConexion().getDeviceId() != null) {
             if (!sesion.getConexion().getDeviceId().equalsIgnoreCase(deviceId)) {
-                throw new RuntimeException("Dispositivo no autorizado para esta sesión");
+                throw new ErrorNegocioException("Dispositivo no autorizado para esta sesión");
             }
         }
         return sesion;

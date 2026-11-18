@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AdminService {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(AdminService.class);
+    private static final String ROL_PROFESOR = "PROFESOR";
     private static final String ROL_SUPERADMIN = "SUPERADMIN";
     private static final String ALFABETO_CLAVE = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
     private final SecureRandom random = new SecureRandom();
@@ -73,6 +75,45 @@ public class AdminService {
         prof.setEstado(EstadoUsuario.valueOf(nuevoEstado.toUpperCase().trim()));
         tocarAuditoria(prof);
         profesorRepository.save(prof);
+    }
+
+    /**
+     * Promueve un docente a SUPERADMIN o lo degrada a PROFESOR dejando rastro de auditoría.
+     * Impide dejar el sistema sin al menos un SUPERADMIN y evita que un administrador se quite su propio rol.
+     */
+    public void cambiarRolProfesor(String codigoProfesor, String nuevoRol, String actorEmail) {
+        String rolNormalizado = nuevoRol == null ? "" : nuevoRol.trim().toUpperCase();
+        if (!ROL_PROFESOR.equals(rolNormalizado) && !ROL_SUPERADMIN.equals(rolNormalizado)) {
+            throw new IllegalArgumentException("El rol debe ser PROFESOR o SUPERADMIN.");
+        }
+        Profesor prof = obtenerProfesor(codigoProfesor);
+        String rolAnterior = (prof.getRol() == null || prof.getRol().isBlank()) ? ROL_PROFESOR : prof.getRol().trim().toUpperCase();
+        if (rolNormalizado.equals(rolAnterior)) {
+            return;
+        }
+        if (ROL_SUPERADMIN.equals(rolNormalizado) && prof.getEstado() != EstadoUsuario.ACTIVO) {
+            throw new IllegalArgumentException("Solo se puede promover a SuperADMIN una cuenta activa.");
+        }
+        if (ROL_PROFESOR.equals(rolNormalizado) && esSuperAdmin(prof)) {
+            if (actorEmail != null && actorEmail.equalsIgnoreCase(prof.getEmailInstitucional())) {
+                throw new IllegalArgumentException("No puedes quitarte el rol SuperADMIN a tu propia cuenta.");
+            }
+            long totalSuperAdmins = profesorRepository.findAll().stream()
+                    .filter(p -> esSuperAdmin(p) && p.getEstado() == EstadoUsuario.ACTIVO)
+                    .count();
+            if (totalSuperAdmins <= 1) {
+                throw new IllegalArgumentException("Debe existir al menos una cuenta SuperADMIN en el sistema.");
+            }
+        }
+        prof.setRol(rolNormalizado);
+        tocarAuditoria(prof);
+        profesorRepository.save(prof);
+        LOG.warn("[ADMIN-AUDITORIA] {} cambió el rol de {} ({}) de {} a {}",
+                actorEmail != null ? actorEmail : "desconocido",
+                prof.getCodigoProfesor(),
+                prof.getEmailInstitucional(),
+                rolAnterior,
+                rolNormalizado);
     }
 
     public void cambiarEstadoEstudiante(String estudianteId, String nuevoEstado) {

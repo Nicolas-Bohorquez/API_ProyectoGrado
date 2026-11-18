@@ -4,6 +4,7 @@ import com.example.AppSegurity.Enums.Estado_pin;
 import com.example.AppSegurity.Enums.Sensibilidad_IA;
 import com.example.AppSegurity.Models.Examen;
 import com.example.AppSegurity.Repositorys.ExamenRepository;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Sub_Clases.ConfiguracionExamen;
 import com.example.AppSegurity.Sub_Clases.ControlAcceso;
 import com.example.AppSegurity.Sub_Clases.FechaExamen;
@@ -38,7 +39,7 @@ public class ExamenService {
      */
     public List<java.util.Map<String, String>> bulkInscribirEstudiantes(String codigoExamen, List<com.example.AppSegurity.Models.Estudiante> estudiantesCsv) {
         List<java.util.Map<String, String>> credencialesNuevas = new ArrayList<>();
-        Examen examen = examenRepository.findById(codigoExamen).orElseThrow(() -> new RuntimeException("Examen no encontrado"));
+        Examen examen = examenRepository.findById(codigoExamen).orElseThrow(() -> new ErrorNegocioException("Examen no encontrado"));
         String materiaCodigo = examen.getMateriaCodigo();
         
         for (com.example.AppSegurity.Models.Estudiante est : estudiantesCsv) {
@@ -141,7 +142,7 @@ public class ExamenService {
 
     public Examen configurarDesdeMapa(String codigoExamen, java.util.Map<String, Object> payload) {
         Examen examen = examenRepository.findById(codigoExamen)
-                .orElseThrow(() -> new RuntimeException("Error al traer la información del examen"));
+                .orElseThrow(() -> new ErrorNegocioException("Error al traer la información del examen"));
 
         // Actualizar FechaExamen si viene en el payload
         if (payload.containsKey("fechaString") && payload.containsKey("horaInicioString")) {
@@ -202,7 +203,7 @@ public class ExamenService {
     public void abrirSalaExamen(String codigoExamen) {
         //Buscar y traer el examen de la base de datos
         Examen examen = examenRepository.findById(codigoExamen)
-                .orElseThrow(() -> new RuntimeException("Error al traer la información del examenv"));
+                .orElseThrow(() -> new ErrorNegocioException("Error al traer la información del examen"));
 
         // Limpiar sesiones previas (fantasmas) para que el examen inicie en blanco
         List<com.example.AppSegurity.Models.SesionSupervision> sesionesViejas = sesionSupervisionRepository.findByExamenId(codigoExamen);
@@ -224,7 +225,7 @@ public class ExamenService {
     public void cerrarSalaExamen(String codigoExamen) {
         //Buscamos y traemos la info del examen creado de la base de datos
         Examen examen = examenRepository.findById(codigoExamen)
-                .orElseThrow(() -> new RuntimeException("Error al traer la información del examenv"));
+                .orElseThrow(() -> new ErrorNegocioException("Error al traer la información del examen"));
 
         //Cambiamos el estado del PIN del examen a finalizado
         examen.getControlAcceso().setEstadoPin(Estado_pin.FINALIZADO);

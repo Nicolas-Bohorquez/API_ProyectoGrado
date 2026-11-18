@@ -1,6 +1,7 @@
 package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.DTO.CambiarEstadoRequest;
+import com.example.AppSegurity.DTO.CambiarRolRequest;
 import com.example.AppSegurity.DTO.DatosPersonaRequest;
 import com.example.AppSegurity.Services.AdminService;
 import jakarta.validation.Valid;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/admin")
 public class AdminController {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(AdminController.class);
+
     @Autowired
     private AdminService adminService;
 
@@ -25,7 +28,8 @@ public class AdminController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", String.valueOf(e.getMessage())));
+            LOG.error("[ADMIN] Error interno: {}: {}", e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Error interno del servidor. Intenta de nuevo más tarde."));
         }
     }
 
@@ -58,6 +62,19 @@ public class AdminController {
         return ejecutar(() -> {
             adminService.cambiarEstadoProfesor(codigoProfesor, nuevoEstado);
             return mensaje("Estado del docente actualizado con éxito a " + nuevoEstado);
+        });
+    }
+
+    @PutMapping("/profesores/{codigoProfesor}/rol")
+    public ResponseEntity<?> cambiarRolProfesor(
+            @PathVariable String codigoProfesor,
+            @Valid @RequestBody CambiarRolRequest payload,
+            org.springframework.security.core.Authentication authentication) {
+        String nuevoRol = payload.getRol().trim().toUpperCase();
+        String actor = authentication != null ? authentication.getName() : "desconocido";
+        return ejecutar(() -> {
+            adminService.cambiarRolProfesor(codigoProfesor, nuevoRol, actor);
+            return mensaje("Rol del docente actualizado con éxito a " + nuevoRol);
         });
     }
 

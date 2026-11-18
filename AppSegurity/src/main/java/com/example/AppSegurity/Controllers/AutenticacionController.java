@@ -2,8 +2,11 @@ package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.DTO.LoginRequest;
 import com.example.AppSegurity.Services.AutenticacionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -37,9 +40,19 @@ public class AutenticacionController {
     @Autowired
     private com.example.AppSegurity.Repositorys.EstudianteRepository estudianteRepository;
 
+    // Handler local para conservar la forma {"exito": false, "mensaje": ...} en vez del {"error": ...} global.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> datosInvalidos(MethodArgumentNotValidException e) {
+        String mensaje = e.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(err -> err.getDefaultMessage())
+                .orElse("Los datos enviados no son válidos.");
+        return ResponseEntity.status(400).body(Map.of("exito", false, "mensaje", mensaje));
+    }
+
     //Metodos Post
     @PostMapping("/login/estudiante")
-    public ResponseEntity<?> loginEstudiante(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> loginEstudiante(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             //Iniciamos el login del service pasandole el email y password y guardamos en una variable llamada token
             String token = autenticacionService.loginEstudiante(loginRequest.getEmail(), loginRequest.getPassword());
@@ -60,7 +73,7 @@ public class AutenticacionController {
     private com.example.AppSegurity.Repositorys.ProfesorRepository profesorRepository;
 
     @PostMapping("/login/profesor")
-    public ResponseEntity<?> loginProfesor(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> loginProfesor(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             //Iniciamos el login del service pasandole el email y password y guardamos en una variable llamada token
             String token = autenticacionService.loginProfesor(loginRequest.getEmail(), loginRequest.getPassword());
@@ -103,7 +116,7 @@ public class AutenticacionController {
     // --- ENDPOINTS DE AUTO-REGISTRO INSTITUCIONAL CON OTP ---
 
     @PostMapping("/registro/solicitar-codigo")
-    public ResponseEntity<?> solicitarCodigoRegistro(@RequestBody com.example.AppSegurity.DTO.RegistroSolicitudRequest request) {
+    public ResponseEntity<?> solicitarCodigoRegistro(@Valid @RequestBody com.example.AppSegurity.DTO.RegistroSolicitudRequest request) {
         try {
             autenticacionService.solicitarCodigoRegistro(request);
             Map<String, Object> resp = new HashMap<>();
@@ -122,7 +135,7 @@ public class AutenticacionController {
     }
 
     @PostMapping("/registro/confirmar-estudiante")
-    public ResponseEntity<?> confirmarRegistroEstudiante(@RequestBody com.example.AppSegurity.DTO.RegistroConfirmarRequest request) {
+    public ResponseEntity<?> confirmarRegistroEstudiante(@Valid @RequestBody com.example.AppSegurity.DTO.RegistroConfirmarRequest request) {
         try {
             autenticacionService.confirmarRegistroEstudiante(request);
             Map<String, Object> resp = new HashMap<>();
@@ -141,7 +154,7 @@ public class AutenticacionController {
     }
 
     @PostMapping("/registro/confirmar-profesor")
-    public ResponseEntity<?> confirmarRegistroProfesor(@RequestBody com.example.AppSegurity.DTO.RegistroConfirmarRequest request) {
+    public ResponseEntity<?> confirmarRegistroProfesor(@Valid @RequestBody com.example.AppSegurity.DTO.RegistroConfirmarRequest request) {
         try {
             autenticacionService.confirmarRegistroProfesor(request);
             Map<String, Object> resp = new HashMap<>();
@@ -162,7 +175,7 @@ public class AutenticacionController {
     // --- ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA CON OTP ---
 
     @PostMapping("/recuperar/solicitar-codigo")
-    public ResponseEntity<?> solicitarCodigoRecuperacion(@RequestBody com.example.AppSegurity.DTO.RecuperarSolicitudRequest request) {
+    public ResponseEntity<?> solicitarCodigoRecuperacion(@Valid @RequestBody com.example.AppSegurity.DTO.RecuperarSolicitudRequest request) {
         try {
             autenticacionService.solicitarCodigoRecuperacion(request);
             Map<String, Object> resp = new HashMap<>();
@@ -181,7 +194,7 @@ public class AutenticacionController {
     }
 
     @PostMapping("/recuperar/confirmar")
-    public ResponseEntity<?> confirmarRecuperacionPassword(@RequestBody com.example.AppSegurity.DTO.RecuperarConfirmarRequest request) {
+    public ResponseEntity<?> confirmarRecuperacionPassword(@Valid @RequestBody com.example.AppSegurity.DTO.RecuperarConfirmarRequest request) {
         try {
             autenticacionService.confirmarRecuperacionPassword(request);
             Map<String, Object> resp = new HashMap<>();

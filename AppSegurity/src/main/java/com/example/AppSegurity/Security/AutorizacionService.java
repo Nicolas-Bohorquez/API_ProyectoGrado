@@ -139,6 +139,27 @@ public class AutorizacionService {
         exigirDocenteDe(a, examen.get());
     }
 
+    /**
+     * Exige que el usuario autenticado sea el docente titular del examen al que pertenece la sesión (o administrador).
+     * A diferencia de exigirAccesoASesion, rechaza explícitamente a cualquier estudiante aunque sea el dueño de la sesión.
+     */
+    public void exigirDocenteDeSesion(Authentication a, String sesionId) {
+        if (esAdmin(a)) return;
+        if (sesionId == null) return;
+        Optional<SesionSupervision> sesion = sesionSupervisionRepository.findById(sesionId);
+        if (sesion.isEmpty()) return;
+        if (esEstudiante(a)) {
+            throw denegado("Solo el docente titular puede realizar esta acción");
+        }
+        Optional<Examen> examen = sesion.get().getExamenId() == null
+                ? Optional.empty()
+                : examenRepository.findById(sesion.get().getExamenId());
+        if (examen.isEmpty()) {
+            throw denegado("La sesión no está asociada a un examen del docente");
+        }
+        exigirDocenteDe(a, examen.get());
+    }
+
     // ───────────── Variantes ESTRICTAS (WebSocket): el recurso debe existir ─────────────
     /** Como exigirAccesoASesion pero rechazando también sesiones que no existen (un destino STOMP inventado no es válido). */
     public void exigirAccesoASesionExistente(Authentication a, String sesionId) {

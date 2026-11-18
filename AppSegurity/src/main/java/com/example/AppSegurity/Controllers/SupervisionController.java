@@ -5,6 +5,7 @@ import com.example.AppSegurity.DTO.NuevaAlertaRequest;
 import com.example.AppSegurity.Models.AlertaEvidencia;
 import com.example.AppSegurity.Models.SesionSupervision;
 import com.example.AppSegurity.Security.AutorizacionService;
+import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Services.SesionSupervisionService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -31,10 +32,17 @@ import java.nio.file.Paths;
 
 public class SupervisionController {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(SupervisionController.class);
+
     @Autowired
     private SesionSupervisionService sesionSupervisionService;
     @Autowired
     private AutorizacionService autorizacion;
+
+    private ResponseEntity<String> errorInterno(String contexto, Exception e) {
+        LOG.error("[SUPERVISION] {}: {}: {}", contexto, e.getClass().getSimpleName(), e.getMessage());
+        return ResponseEntity.status(500).body(contexto + " Intenta de nuevo más tarde.");
+    }
 
     @PostMapping("/iniciar")
     public ResponseEntity<?> iniciarSesionSupervision(@RequestBody IniciarSesionRequest peticion, Authentication authentication) {
@@ -58,8 +66,11 @@ public class SupervisionController {
 
         } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
             return ResponseEntity.status(429).body("Acceso denegado: " + e.getMessage());
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(403).body("Acceso denegado: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("[SUPERVISION] Error al iniciar sesión: {}: {}", e.getClass().getSimpleName(), e.getMessage());
+            return ResponseEntity.status(500).body("Error interno al iniciar la sesión de supervisión.");
         }
     }
 
@@ -73,9 +84,10 @@ public class SupervisionController {
 
             //retornamos una respuesta que todo salio bien
             return ResponseEntity.ok("Alerta guardada exitosamente");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al registrar la alerta: " + e.getMessage());
-
+        } catch (Exception e) {
+            return errorInterno("Error interno al registrar la alerta.", e);
         }
     }
 
@@ -89,8 +101,10 @@ public class SupervisionController {
             //Retornamos una respuesta de que se finalizo correctamente la sesión
             return ResponseEntity.ok("La sesión fue finalizada exitosamente");
 
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al finalizar la sesión: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al finalizar la sesión.", e);
         }
     }
 
@@ -104,9 +118,10 @@ public class SupervisionController {
             //Retornamos un mensaje de exito 
             return ResponseEntity.ok("Se guardo el veredicto correctamente");
 
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al guardar el veredicto: " + e.getMessage());
-
+        } catch (Exception e) {
+            return errorInterno("Error interno al guardar el veredicto.", e);
         }
     }
 
@@ -153,8 +168,10 @@ public class SupervisionController {
 
             //Retornamos la lista al profesor
             return ResponseEntity.ok(listaAlertas);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al obtener las alertas: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener las alertas.", e);
         }
 
     }
@@ -164,8 +181,10 @@ public class SupervisionController {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             return ResponseEntity.ok(sesionSupervisionService.obtenerSesion(sesionId));
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener la sesión.", e);
         }
     }
     
@@ -175,8 +194,10 @@ public class SupervisionController {
         try {
             List<AlertaEvidencia> listaAlertas = sesionSupervisionService.obtenerAlertasExamen(codigoExamen);
             return ResponseEntity.ok(listaAlertas);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al obtener las alertas globales: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener las alertas globales.", e);
         }
     }
     
@@ -186,8 +207,10 @@ public class SupervisionController {
         try {
             com.example.AppSegurity.DTO.ReglasExamenResponse reglas = sesionSupervisionService.obtenerReglasExamen(sesionId);
             return ResponseEntity.ok(reglas);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al obtener reglas: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener las reglas del examen.", e);
         }
     }
 
@@ -197,8 +220,10 @@ public class SupervisionController {
         try {
             List<SesionSupervision> sesiones = sesionSupervisionService.obtenerSesionesPorExamen(codigoExamen, todas);
             return ResponseEntity.ok(sesiones);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al obtener las sesiones: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al obtener las sesiones.", e);
         }
     }
 
@@ -211,8 +236,10 @@ public class SupervisionController {
             resp.put("sesionId", sesion.getSesionId());
             resp.put("estadoSesion", sesion.getEstadoSesion());
             return ResponseEntity.ok(resp);
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(403).body("Error en heartbeat: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno en heartbeat.", e);
         }
     }
 
@@ -222,8 +249,10 @@ public class SupervisionController {
         try {
             sesionSupervisionService.marcarSesionInterrumpida(sesionId, motivo);
             return ResponseEntity.ok("Sesión marcada como interrumpida");
-        } catch (Exception e) {
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al interrumpir sesión: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al interrumpir la sesión.", e);
         }
     }
 

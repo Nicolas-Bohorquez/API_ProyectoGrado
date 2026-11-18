@@ -25,6 +25,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.example.AppSegurity.Security.LimitadorIntentos;
 
 @Service
 public class SesionSupervisionService {
@@ -39,13 +40,30 @@ public class SesionSupervisionService {
     private EstudianteRepository estudianteRepository;
     @Autowired
     private SimpMessagingTemplate webSocketMessagingTemplate;
-    
+    @Autowired
+    private LimitadorIntentos limitadorPin;
 
+    /**
+     * Antes no había ningún freno aquí: a diferencia del login, el OTP o el cambio de clave, un estudiante autenticado
+     * podía probar PINes sin límite. Solo cuenta como "fallo" un PIN que no corresponde a ningún examen (adivinanza);
+     * un PIN correcto que luego se rechaza por otro motivo (examen cerrado, fuera de horario, límite de intentos,
+     * sesión duplicada, VPN, etc.) NO debe penalizar al estudiante que sí tecleó bien el PIN.
+     */
     public SesionSupervision iniciarSesion(String idEstudiante, String pinExamen, Conexion conexionInfo) {
+        String clavePin = "pin:" + (idEstudiante == null ? "" : idEstudiante.trim().toLowerCase());
+        limitadorPin.verificar(clavePin);
 
-        //Se busca y se extrae el PIN del examen
-        Examen examen = examenRepository.findByControlAccesoPinSesion(pinExamen)
-                .orElseThrow(() -> new RuntimeException("El PIN ingresado no existe o es incorrecto"));
+        Examen examen = examenRepository.findByControlAccesoPinSesion(pinExamen).orElse(null);
+        if (examen == null) {
+            limitadorPin.registrarFallo(clavePin);
+            throw new RuntimeException("El PIN ingresado no existe o es incorrecto");
+        }
+        limitadorPin.registrarExito(clavePin);
+
+        return iniciarSesionConExamenValido(idEstudiante, examen, conexionInfo);
+    }
+
+    private SesionSupervision iniciarSesionConExamenValido(String idEstudiante, Examen examen, Conexion conexionInfo) {
 
         // Se trae el estudiante de la base de datos para ver las materias que tiene
         Estudiante estudiante = estudianteRepository.findById(idEstudiante)

@@ -1,8 +1,10 @@
 package com.example.AppSegurity.Controllers;
 
+import com.example.AppSegurity.DTO.ConfigurarExamenRequest;
 import com.example.AppSegurity.Models.Examen;
 import com.example.AppSegurity.Services.ExamenService;
 import com.example.AppSegurity.Sub_Clases.ConfiguracionExamen;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -41,10 +43,10 @@ public class ExamenController {
     }
 
     @PutMapping("/{codigoExamen}/configurar")
-    public ResponseEntity<?> configurarRestriccionesExamen(@PathVariable String codigoExamen, @RequestBody java.util.Map<String, Object> payload, org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<?> configurarRestriccionesExamen(@PathVariable String codigoExamen, @Valid @RequestBody ConfigurarExamenRequest payload, org.springframework.security.core.Authentication authentication) {
         autorizacion.exigirDocenteDeExamen(authentication, codigoExamen);
         try {
-            Examen examenConfigurado = examenService.configurarDesdeMapa(codigoExamen, payload);
+            Examen examenConfigurado = examenService.configurarDesdeMapa(codigoExamen, payload.toMap());
             return ResponseEntity.ok(examenConfigurado);
         } catch (Exception e) {
             return ResponseEntity.status(400).body("Error al configurr el examen: " + e.getMessage());

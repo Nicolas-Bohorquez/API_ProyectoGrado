@@ -390,7 +390,15 @@ public class AutenticacionService {
     /**
      * IP real del cliente para la petición HTTP en curso. Railway (y cualquier proxy delante del backend) hace que
      * todas las peticiones lleguen desde la MISMA IP interna si se usa request.getRemoteAddr() a secas — eso volvería
-     * este límite global por accidente. Por eso se lee primero X-Forwarded-For (la IP original que agrega el proxy).
+     * este límite global por accidente. Por eso se lee X-Forwarded-For.
+     *
+     * Se toma el ÚLTIMO valor de la lista, no el primero: cualquier cliente puede mandar ese encabezado con el
+     * contenido que quiera, y Railway (el único proxy de confianza delante del backend hoy) AGREGA la IP real al
+     * final de lo que ya traiga la petición en vez de reemplazarlo. Tomar el primer valor (como se hacía antes)
+     * dejaba que cualquiera falsificara su IP con solo mandar "X-Forwarded-For: lo-que-sea" y rotarlo en cada
+     * intento, anulando por completo el límite por IP contra "credential spraying" (ver LimitadorIntentosPorIp).
+     * Si en el futuro se agrega OTRO proxy de confianza delante de Railway (un CDN, por ejemplo), hay que tomar el
+     * valor "n-ésimo desde el final" según cuántos proxies de confianza haya, no volver al primero.
      */
     private static String ipDelClienteActual() {
         try {
@@ -398,7 +406,8 @@ public class AutenticacionService {
             var request = ((org.springframework.web.context.request.ServletRequestAttributes) attrs).getRequest();
             String xff = request.getHeader("X-Forwarded-For");
             if (xff != null && !xff.isBlank()) {
-                return xff.split(",")[0].trim();
+                String[] partes = xff.split(",");
+                return partes[partes.length - 1].trim();
             }
             return request.getRemoteAddr();
         } catch (IllegalStateException e) {

@@ -96,6 +96,13 @@ public class ExamenService {
     }
 
     public Examen crearExamen(String codigoExamen, String codigoProfesor, String materiaCodigo, FechaExamen fecha) {
+        // "codigoExamen" es el _id de Mongo y llega del cliente (un UUID nuevo en cada creación, nunca reutilizado
+        // a propósito). Sin este chequeo, examenRepository.save() hace upsert por _id: si alguna vez colisionara con
+        // el código de OTRO examen (de cualquier docente), lo sobrescribiría entero sin ningún aviso.
+        if (examenRepository.existsById(codigoExamen)) {
+            throw new IllegalStateException("Ya existe un examen con el código " + codigoExamen + ".");
+        }
+
         //Generamos el PIN de manera aleatoria e irrepetible
         String PIN_aleatorio = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 

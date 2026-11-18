@@ -1,6 +1,9 @@
 package com.example.AppSegurity.Controllers;
 
+import com.example.AppSegurity.DTO.CambiarEstadoRequest;
+import com.example.AppSegurity.DTO.DatosPersonaRequest;
 import com.example.AppSegurity.Services.AdminService;
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -50,11 +53,8 @@ public class AdminController {
     // ---------------------------------------------------------------- Estado
 
     @PutMapping("/profesores/{codigoProfesor}/estado")
-    public ResponseEntity<?> cambiarEstadoProfesor(@PathVariable String codigoProfesor, @RequestBody Map<String, String> payload) {
-        String nuevoEstado = payload.get("estado");
-        if (nuevoEstado == null || nuevoEstado.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El campo estado es requerido"));
-        }
+    public ResponseEntity<?> cambiarEstadoProfesor(@PathVariable String codigoProfesor, @Valid @RequestBody CambiarEstadoRequest payload) {
+        String nuevoEstado = payload.getEstado();
         return ejecutar(() -> {
             adminService.cambiarEstadoProfesor(codigoProfesor, nuevoEstado);
             return mensaje("Estado del docente actualizado con éxito a " + nuevoEstado);
@@ -62,11 +62,8 @@ public class AdminController {
     }
 
     @PutMapping("/estudiantes/{estudianteId}/estado")
-    public ResponseEntity<?> cambiarEstadoEstudiante(@PathVariable String estudianteId, @RequestBody Map<String, String> payload) {
-        String nuevoEstado = payload.get("estado");
-        if (nuevoEstado == null || nuevoEstado.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El campo estado es requerido"));
-        }
+    public ResponseEntity<?> cambiarEstadoEstudiante(@PathVariable String estudianteId, @Valid @RequestBody CambiarEstadoRequest payload) {
+        String nuevoEstado = payload.getEstado();
         return ejecutar(() -> {
             adminService.cambiarEstadoEstudiante(estudianteId, nuevoEstado);
             return mensaje("Estado del estudiante actualizado con éxito a " + nuevoEstado);
@@ -76,17 +73,17 @@ public class AdminController {
     // --------------------------------------------------------------- Edición
 
     @PutMapping("/profesores/{codigoProfesor}")
-    public ResponseEntity<?> editarProfesor(@PathVariable String codigoProfesor, @RequestBody Map<String, String> datos) {
+    public ResponseEntity<?> editarProfesor(@PathVariable String codigoProfesor, @Valid @RequestBody DatosPersonaRequest datos) {
         return ejecutar(() -> {
-            adminService.editarProfesor(codigoProfesor, datos);
+            adminService.editarProfesor(codigoProfesor, datos.toMap());
             return mensaje("Datos del docente actualizados correctamente.");
         });
     }
 
     @PutMapping("/estudiantes/{estudianteId}")
-    public ResponseEntity<?> editarEstudiante(@PathVariable String estudianteId, @RequestBody Map<String, String> datos) {
+    public ResponseEntity<?> editarEstudiante(@PathVariable String estudianteId, @Valid @RequestBody DatosPersonaRequest datos) {
         return ejecutar(() -> {
-            adminService.editarEstudiante(estudianteId, datos);
+            adminService.editarEstudiante(estudianteId, datos.toMap());
             return mensaje("Datos del estudiante actualizados correctamente.");
         });
     }
@@ -94,13 +91,13 @@ public class AdminController {
     // -------------------------------------------------------------- Creación
 
     @PostMapping("/profesores")
-    public ResponseEntity<?> crearProfesor(@RequestBody Map<String, String> datos) {
-        return ejecutar(() -> adminService.crearProfesor(datos));
+    public ResponseEntity<?> crearProfesor(@Valid @RequestBody DatosPersonaRequest datos) {
+        return ejecutar(() -> adminService.crearProfesor(datos.toMap()));
     }
 
     @PostMapping("/estudiantes")
-    public ResponseEntity<?> crearEstudiante(@RequestBody Map<String, String> datos) {
-        return ejecutar(() -> adminService.crearEstudiante(datos));
+    public ResponseEntity<?> crearEstudiante(@Valid @RequestBody DatosPersonaRequest datos) {
+        return ejecutar(() -> adminService.crearEstudiante(datos.toMap()));
     }
 
     // --------------------------------------------------- Restablecer contraseña

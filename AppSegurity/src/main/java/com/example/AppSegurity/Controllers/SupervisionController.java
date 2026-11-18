@@ -56,6 +56,8 @@ public class SupervisionController {
             //Retornamos la sesion iniciada
             return ResponseEntity.ok(sesionSupervision);
 
+        } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
+            return ResponseEntity.status(429).body("Acceso denegado: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(403).body("Acceso denegado: " + e.getMessage());
         }

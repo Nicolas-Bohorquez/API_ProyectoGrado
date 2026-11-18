@@ -92,11 +92,14 @@ public class SesionSupervisionService {
         }
 
         //Validamos que el estudiante tenga la materia inscrita
-        Boolean esta_inscrito = false;
-        for (Materia materia : estudiante.getMateriasInscritas()) {
-            if (materia.getCodigoMateria().equals(examen.getMateriaCodigo())) {
-                esta_inscrito = true;
-                break;
+        boolean esta_inscrito = false;
+        if (estudiante.getMateriasInscritas() != null) {
+            for (Materia materia : estudiante.getMateriasInscritas()) {
+                if (materia != null && materia.getCodigoMateria() != null
+                        && materia.getCodigoMateria().equals(examen.getMateriaCodigo())) {
+                    esta_inscrito = true;
+                    break;
+                }
             }
         }
 
@@ -107,25 +110,15 @@ public class SesionSupervisionService {
 
         //Validamos la información de la conexión
         //Bloqueamos VPNs o Proxies que puedan enmascarar al estudiante
-        if (conexionInfo.getVpnDetectada() != false) {
+        if (conexionInfo != null && Boolean.TRUE.equals(conexionInfo.getVpnDetectada())) {
             throw new ErrorNegocioException("Acceso denegado: Se ha detectado una conexión VPN activa."
                     + " Por favor desactivarla para hacer el examen");
         }
 
         // Bloqueo por Sistema Operativo ya que nuestra App de Python solo corre en Windows
-        if (conexionInfo.getSistemaOperativo() != null && !conexionInfo.getSistemaOperativo().toLowerCase().contains("windows")) {
+        if (conexionInfo != null && conexionInfo.getSistemaOperativo() != null
+                && !conexionInfo.getSistemaOperativo().toLowerCase().contains("windows")) {
             throw new ErrorNegocioException("Acceso denegado: El sistema de supervisión actualmente solo es compatible con Windows.");
-        }
-        
-        // --- NUEVAS VALIDACIONES: FECHAS ---
-        if (examen.getFechaExamen() != null) {
-            java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
-            if (examen.getFechaExamen().getHoraInicio() != null && ahora.isBefore(examen.getFechaExamen().getHoraInicio())) {
-                throw new ErrorNegocioException("El examen aún no ha comenzado. Empieza a las: " + examen.getFechaExamen().getHoraInicio());
-            }
-            if (examen.getFechaExamen().getHoraFin() != null && ahora.isAfter(examen.getFechaExamen().getHoraFin())) {
-                throw new ErrorNegocioException("El tiempo límite para iniciar el examen ha concluido (" + examen.getFechaExamen().getHoraFin() + ").");
-            }
         }
 
         // Revisar si ya tiene una sesión iniciada para no duplicar tarjetas en el panel del profesor
@@ -135,7 +128,7 @@ public class SesionSupervisionService {
         String motivoBloqueo = "";
         
         for (SesionSupervision s : sesionesPrevias) {
-            if (s.getEstudianteId().equals(estudiante.getEstudianteId())) {
+            if (s.getEstudianteId() != null && s.getEstudianteId().equals(estudiante.getEstudianteId())) {
                 if (s.getEstadoSesion() == EstadoSesion.INICIADA || s.getEstadoSesion() == EstadoSesion.INTERRUMPIDA) {
                     String devExistente = (s.getConexion() != null) ? s.getConexion().getDeviceId() : null;
                     String devEntrante = (conexionInfo != null) ? conexionInfo.getDeviceId() : null;
@@ -324,13 +317,22 @@ public class SesionSupervisionService {
             }
         }
         
-        return new com.example.AppSegurity.DTO.ReglasExamenResponse(
-            examen.getConfiguracionExamen() != null ? examen.getConfiguracionExamen().getProcesosPermitidos() : new java.util.ArrayList<>(),
-            examen.getConfiguracionExamen() != null ? examen.getConfiguracionExamen().getUrlsPermitidas() : new java.util.ArrayList<>(),
+        com.example.AppSegurity.Sub_Clases.ConfiguracionExamen cfg = examen.getConfiguracionExamen();
+        com.example.AppSegurity.DTO.ReglasExamenResponse resp = new com.example.AppSegurity.DTO.ReglasExamenResponse(
+            cfg != null ? cfg.getProcesosPermitidos() : new java.util.ArrayList<>(),
+            cfg != null ? cfg.getUrlsPermitidas() : new java.util.ArrayList<>(),
             sensibilidad,
             duracion,
             reintentosConexion
         );
+        if (cfg != null) {
+            resp.setActivar_reconocimiento_facial(cfg.getActivarReconocimientoFacial() == null || cfg.getActivarReconocimientoFacial());
+            resp.setActivar_deteccion_objetos(cfg.getActivarDeteccionObjetos() == null || cfg.getActivarDeteccionObjetos());
+            resp.setActivar_analisis_audio(cfg.getActivarAnalisisAudio() == null || cfg.getActivarAnalisisAudio());
+            resp.setActivar_monitoreo_procesos(cfg.getActivarMonitoreoProcesos() == null || cfg.getActivarMonitoreoProcesos());
+            resp.setActivar_analisis_teclado(cfg.getActivarAnalisisTeclado() == null || cfg.getActivarAnalisisTeclado());
+        }
+        return resp;
     }
 
     public void registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
@@ -373,10 +375,11 @@ public class SesionSupervisionService {
 
         } else if (alertaRequest.getClaseAlerta() == ClaseAlerta.AUDIO) {
             String rutaAudio = "E2EE_AUDIO";
+            double confianzaVoz = alertaRequest.getConfianzaVoz() != null ? alertaRequest.getConfianzaVoz() : 1.0;
             alertaGuardar = new AlertaAudio(
                     alertaRequest.getTranscripcion(),
                     alertaRequest.getVocesDetectadas(),
-                    alertaRequest.getConfianzaVoz(),
+                    confianzaVoz,
                     rutaAudio);
 
         } else if (alertaRequest.getClaseAlerta() == ClaseAlerta.PROCESO || alertaRequest.getClaseAlerta() == ClaseAlerta.ENTORNO || alertaRequest.getClaseAlerta() == ClaseAlerta.CONTROL_REMOTO || alertaRequest.getClaseAlerta() == ClaseAlerta.APP_TERMINADA || alertaRequest.getClaseAlerta() == ClaseAlerta.SESION_DUPLICADA || alertaRequest.getClaseAlerta() == ClaseAlerta.DESCONEXION_REINCIDENTE || alertaRequest.getClaseAlerta() == ClaseAlerta.DESCONEXION_PROLONGADA) {
@@ -443,6 +446,11 @@ public class SesionSupervisionService {
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(idSesion)
                 .orElseThrow(() -> new ErrorNegocioException("Error al encontrar la sesión a finalizar"));
 
+        if (sesionSupervision.getEstadoSesion() == EstadoSesion.ANULADA
+                || sesionSupervision.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
+            throw new ErrorNegocioException("No se puede finalizar una sesión anulada o en apelación");
+        }
+
         //Se cambia el estado a finalizada
         sesionSupervision.setEstadoSesion(EstadoSesion.FINALIZADA);
 
@@ -455,27 +463,52 @@ public class SesionSupervisionService {
         return alertaEvidenciaRepository.findBySesionIdOrderByHoraCapturaAsc(sesionId);
     }
     
+    private java.util.Map<String, Estudiante> mapearEstudiantesPorId(List<SesionSupervision> sesiones) {
+        java.util.Set<String> estudianteIds = new java.util.HashSet<>();
+        for (SesionSupervision s : sesiones) {
+            if (s.getEstudianteId() != null) {
+                estudianteIds.add(s.getEstudianteId());
+            }
+        }
+        java.util.Map<String, Estudiante> estudiantesPorId = new java.util.HashMap<>();
+        if (!estudianteIds.isEmpty()) {
+            for (Estudiante est : estudianteRepository.findAllById(estudianteIds)) {
+                estudiantesPorId.put(est.getEstudianteId(), est);
+            }
+        }
+        return estudiantesPorId;
+    }
+
     public List<AlertaEvidencia> obtenerAlertasExamen(String examenId) {
         // Obtenemos todas las sesiones de este examen
         List<SesionSupervision> sesiones = sesionSupervisionRepository.findByExamenId(examenId);
-        List<String> sesionIds = new java.util.ArrayList<>();
+        if (sesiones.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
+        List<String> sesionIds = new java.util.ArrayList<>(sesiones.size());
+        java.util.Map<String, Estudiante> estudiantesPorId = mapearEstudiantesPorId(sesiones);
         java.util.Map<String, String> mapNombres = new java.util.HashMap<>();
-        
+
         for (SesionSupervision s : sesiones) {
-            sesionIds.add(s.getSesionId());
-            var est = estudianteRepository.findById(s.getEstudianteId()).orElse(null);
-            if (est != null) {
-                mapNombres.put(s.getSesionId(), est.getNombre() + " " + est.getApellidos());
+            if (s.getSesionId() != null) {
+                sesionIds.add(s.getSesionId());
+                Estudiante est = s.getEstudianteId() != null ? estudiantesPorId.get(s.getEstudianteId()) : null;
+                if (est != null) {
+                    mapNombres.put(s.getSesionId(), est.getNombre() + " " + est.getApellidos());
+                }
             }
         }
-        
-        if (sesionIds.isEmpty()) return new java.util.ArrayList<>();
-        
+
+        if (sesionIds.isEmpty()) {
+            return new java.util.ArrayList<>();
+        }
+
         List<AlertaEvidencia> alertas = alertaEvidenciaRepository.findBySesionIdInOrderByHoraCapturaDesc(sesionIds);
         for (AlertaEvidencia a : alertas) {
             a.setNombreEstudiante(mapNombres.getOrDefault(a.getSesionId(), "Desconocido"));
         }
-        
+
         return alertas;
     }
 
@@ -507,25 +540,44 @@ public class SesionSupervisionService {
         if (!incluirFinalizadas) {
             sesiones.removeIf(s -> s.getEstadoSesion() != EstadoSesion.INICIADA);
         }
-        
-        // Agregar el nombre real del estudiante, su cédula oficial y métricas
+        if (sesiones.isEmpty()) {
+            return sesiones;
+        }
+
+        java.util.Map<String, Estudiante> estudiantesPorId = mapearEstudiantesPorId(sesiones);
+        List<String> sesionIds = new java.util.ArrayList<>(sesiones.size());
         for (SesionSupervision s : sesiones) {
-            estudianteRepository.findById(s.getEstudianteId()).ifPresent(est -> {
+            if (s.getSesionId() != null) {
+                sesionIds.add(s.getSesionId());
+            }
+        }
+
+        java.util.Map<String, List<AlertaEvidencia>> alertasPorSesion = new java.util.HashMap<>();
+        if (!sesionIds.isEmpty()) {
+            for (AlertaEvidencia a : alertaEvidenciaRepository.findBySesionIdInOrderByHoraCapturaDesc(sesionIds)) {
+                alertasPorSesion.computeIfAbsent(a.getSesionId(), k -> new java.util.ArrayList<>()).add(a);
+            }
+        }
+        
+        // Agregar el nombre real del estudiante, su cédula oficial y métricas en memoria (sin consultas N+1)
+        for (SesionSupervision s : sesiones) {
+            Estudiante est = s.getEstudianteId() != null ? estudiantesPorId.get(s.getEstudianteId()) : null;
+            if (est != null) {
                 s.setNombreEstudiante(est.getNombre() + " " + est.getApellidos());
                 s.setCedula(est.getCedula());
-            });
+            }
             
-            List<com.example.AppSegurity.Models.AlertaEvidencia> alertas = alertaEvidenciaRepository.findBySesionIdOrderByHoraCapturaAsc(s.getSesionId());
+            List<AlertaEvidencia> alertas = alertasPorSesion.getOrDefault(s.getSesionId(), java.util.Collections.emptyList());
             s.setCantidadAlertas(alertas.size());
             
             // Calcular integridad dinámica basada en las alertas
             int descuento = 0;
-            for (com.example.AppSegurity.Models.AlertaEvidencia alerta : alertas) {
-                if (alerta.getNivelRiesgo() == com.example.AppSegurity.Enums.NivelRiesgo.BAJO) {
+            for (AlertaEvidencia alerta : alertas) {
+                if (alerta.getNivelRiesgo() == NivelRiesgo.BAJO) {
                     descuento += 5;
-                } else if (alerta.getNivelRiesgo() == com.example.AppSegurity.Enums.NivelRiesgo.MEDIO) {
+                } else if (alerta.getNivelRiesgo() == NivelRiesgo.MEDIO) {
                     descuento += 15;
-                } else if (alerta.getNivelRiesgo() == com.example.AppSegurity.Enums.NivelRiesgo.ALTO) {
+                } else if (alerta.getNivelRiesgo() == NivelRiesgo.ALTO) {
                     descuento += 30;
                 }
             }

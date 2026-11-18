@@ -76,7 +76,7 @@ public class SupervisionController {
 
     //Metodos POST
     @PostMapping("/{sesionId}/alerta")
-    public ResponseEntity<?> registrarAlerta(@PathVariable String sesionId, @RequestBody NuevaAlertaRequest alertaRequest, Authentication authentication) {
+    public ResponseEntity<?> registrarAlerta(@PathVariable String sesionId, @jakarta.validation.Valid @RequestBody NuevaAlertaRequest alertaRequest, Authentication authentication) {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             //Llamamos a supervisionService y registramos la alerta
@@ -110,7 +110,7 @@ public class SupervisionController {
 
     @PostMapping("/{sesionId}/veredicto")
     public ResponseEntity<?> guardarVeredicto(@PathVariable String sesionId, @RequestBody AnalisisGlobal_IA analisis_ia, @RequestParam String veredictoDocente, @RequestParam String urlPDF, Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirDocenteDeSesion(authentication, sesionId);
         try {
             //Llamamos a supervisionService y guardamos el veredicto 
             sesionSupervisionService.guardarVeredicto_Reporte(sesionId, analisis_ia, veredictoDocente, urlPDF);

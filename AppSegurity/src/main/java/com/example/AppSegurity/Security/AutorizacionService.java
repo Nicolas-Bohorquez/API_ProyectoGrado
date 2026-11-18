@@ -74,7 +74,8 @@ public class AutorizacionService {
 
     public Optional<Profesor> profesorActual(Authentication a) {
         if (a == null || a.getName() == null) return Optional.empty();
-        return profesorRepository.findByEmailInstitucional(a.getName());
+        return profesorRepository.findByEmailInstitucional(a.getName())
+                .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(a.getName()));
     }
 
     private AccessDeniedException denegado(String motivo) {

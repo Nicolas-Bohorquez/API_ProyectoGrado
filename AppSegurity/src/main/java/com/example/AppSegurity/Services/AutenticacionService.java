@@ -131,17 +131,25 @@ public class AutenticacionService {
             throw new IllegalArgumentException("La cédula debe contener entre 6 y 12 dígitos numéricos.");
         }
 
-        // 3. Validar no duplicados en BD según el rol
+        // 3. Validar no duplicados en BD según el rol y unicidad cruzada de correo
         if ("ESTUDIANTE".equals(rol)) {
             if (!estudianteRepository.findByEmailIgnoreCase(email).isEmpty()) {
                 throw new IllegalStateException("El correo institucional ya se encuentra registrado para un estudiante.");
+            }
+            if (profesorRepository.findByEmailInstitucional(email).isPresent()
+                    || profesorRepository.findByEmailInstitucionalIgnoreCase(email).isPresent()) {
+                throw new IllegalStateException("El correo institucional ya se encuentra registrado para un docente.");
             }
             if (estudianteRepository.findByCedula(cedula).isPresent()) {
                 throw new IllegalStateException("La cédula ya se encuentra registrada en el sistema.");
             }
         } else if ("PROFESOR".equals(rol)) {
-            if (profesorRepository.findByEmailInstitucional(email).isPresent()) {
+            if (profesorRepository.findByEmailInstitucional(email).isPresent()
+                    || profesorRepository.findByEmailInstitucionalIgnoreCase(email).isPresent()) {
                 throw new IllegalStateException("El correo institucional ya se encuentra registrado para un docente.");
+            }
+            if (!estudianteRepository.findByEmailIgnoreCase(email).isEmpty()) {
+                throw new IllegalStateException("El correo institucional ya se encuentra registrado para un estudiante.");
             }
             if (profesorRepository.findByCedula(cedula).isPresent()) {
                 throw new IllegalStateException("La cédula ya se encuentra registrada en el sistema.");
@@ -162,7 +170,10 @@ public class AutenticacionService {
     }
 
     public void confirmarRegistroEstudiante(RegistroConfirmarRequest req) {
-        if (req == null || req.getEmail() == null || req.getCodigoOtp() == null || req.getPassword() == null) {
+        if (req == null || req.getEmail() == null || req.getCodigoOtp() == null || req.getPassword() == null
+                || req.getNombre() == null || req.getNombre().isBlank()
+                || req.getApellidos() == null || req.getApellidos().isBlank()
+                || req.getCedula() == null || req.getCedula().isBlank()) {
             throw new IllegalArgumentException("Todos los campos son requeridos.");
         }
 
@@ -183,18 +194,32 @@ public class AutenticacionService {
             if (!otpCoincide(email, otpInfo, codigoIngresado)) {
                 throw new IllegalArgumentException("El código de verificación de 6 dígitos es incorrecto.");
             }
+            if (otpInfo.rol != null && !"ESTUDIANTE".equals(otpInfo.rol)) {
+                throw new IllegalArgumentException("El código de verificación no corresponde a un registro de estudiante.");
+            }
 
         // 2. Validar contraseña mínima
         if (req.getPassword().length() < 6) {
             throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
         }
 
-        // 3. Crear el nuevo Estudiante
+        // 3. Evitar duplicados o sobrescritura de cuentas existentes
+        String cedulaLimpia = req.getCedula().trim();
+        String estId = "EST-" + cedulaLimpia;
+        if (estudianteRepository.existsById(estId)
+                || estudianteRepository.findByCedula(cedulaLimpia).isPresent()
+                || !estudianteRepository.findByEmailIgnoreCase(email).isEmpty()
+                || profesorRepository.findByEmailInstitucional(email).isPresent()
+                || profesorRepository.findByEmailInstitucionalIgnoreCase(email).isPresent()) {
+            throw new IllegalStateException("El estudiante, cédula o correo ya se encuentra registrado en el sistema.");
+        }
+
+        // 4. Crear el nuevo Estudiante
         Estudiante nuevo = new Estudiante();
-        nuevo.setEstudianteId("EST-" + req.getCedula().trim());
+        nuevo.setEstudianteId(estId);
         nuevo.setNombre(req.getNombre().trim());
         nuevo.setApellidos(req.getApellidos().trim());
-        nuevo.setCedula(req.getCedula().trim());
+        nuevo.setCedula(cedulaLimpia);
         nuevo.setEmail(email);
         nuevo.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         nuevo.setEstadoUsuario(EstadoUsuario.ACTIVO);
@@ -210,7 +235,10 @@ public class AutenticacionService {
     }
 
     public void confirmarRegistroProfesor(RegistroConfirmarRequest req) {
-        if (req == null || req.getEmail() == null || req.getCodigoOtp() == null || req.getPassword() == null) {
+        if (req == null || req.getEmail() == null || req.getCodigoOtp() == null || req.getPassword() == null
+                || req.getNombre() == null || req.getNombre().isBlank()
+                || req.getApellidos() == null || req.getApellidos().isBlank()
+                || req.getCedula() == null || req.getCedula().isBlank()) {
             throw new IllegalArgumentException("Todos los campos son requeridos.");
         }
 
@@ -231,26 +259,39 @@ public class AutenticacionService {
             if (!otpCoincide(email, otpInfo, codigoIngresado)) {
                 throw new IllegalArgumentException("El código de verificación de 6 dígitos es incorrecto.");
             }
+            if (otpInfo.rol != null && !"PROFESOR".equals(otpInfo.rol)) {
+                throw new IllegalArgumentException("El código de verificación no corresponde a un registro de docente.");
+            }
 
         // 2. Validar contraseña mínima
         if (req.getPassword().length() < 6) {
             throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
         }
 
-        // 3. Código profesor
+        // 3. Código profesor y verificación anti-sobrescritura
+        String cedulaLimpia = req.getCedula().trim();
         String codProf = (req.getCodigoProfesor() != null && !req.getCodigoProfesor().trim().isEmpty())
                 ? req.getCodigoProfesor().trim()
-                : "PROF-" + req.getCedula().trim();
+                : "PROF-" + cedulaLimpia;
+
+        if (profesorRepository.existsById(codProf)
+                || profesorRepository.findByCedula(cedulaLimpia).isPresent()
+                || profesorRepository.findByEmailInstitucional(email).isPresent()
+                || profesorRepository.findByEmailInstitucionalIgnoreCase(email).isPresent()
+                || !estudianteRepository.findByEmailIgnoreCase(email).isEmpty()) {
+            throw new IllegalStateException("El código de docente, cédula o correo ya se encuentra registrado en el sistema.");
+        }
 
         // 4. Crear el nuevo Profesor
         Profesor nuevo = new Profesor();
         nuevo.setCodigoProfesor(codProf);
         nuevo.setNombre(req.getNombre().trim());
         nuevo.setApellidos(req.getApellidos().trim());
-        nuevo.setCedula(req.getCedula().trim());
+        nuevo.setCedula(cedulaLimpia);
         nuevo.setEmailInstitucional(email);
         nuevo.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         nuevo.setEstado(EstadoUsuario.ACTIVO);
+        nuevo.setRol("PROFESOR");
         nuevo.setMaterias(new java.util.ArrayList<>());
 
         Auditoria aud = new Auditoria();
@@ -467,6 +508,7 @@ public class AutenticacionService {
 
         //Buscamos al profesor por su email en la base de datos 
         Profesor profesor = profesorRepository.findByEmailInstitucional(email)
+                .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(email))
                 .orElseThrow(() -> new RuntimeException("No se encontro el email del profesor"));
 
         //Validamos que el profesor en cuestión su estado no sea inactivo o suspendido
@@ -509,7 +551,8 @@ public class AutenticacionService {
         String email = jwtProveedor.extraerEmail(freshTokenViejo);
 
         // Una cuenta suspendida o dada de baja no puede seguir renovando su token
-        var profesorRefresh = profesorRepository.findByEmailInstitucional(email);
+        var profesorRefresh = profesorRepository.findByEmailInstitucional(email)
+                .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(email));
         if (profesorRefresh.isPresent()) {
             if (profesorRefresh.get().getEstado() != EstadoUsuario.ACTIVO) {
                 throw new RuntimeException("La cuenta no está activa");

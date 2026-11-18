@@ -36,6 +36,12 @@ public class AdminService {
     private ExamenRepository examenRepository;
 
     @Autowired
+    private com.example.AppSegurity.Repositorys.AlertaEvidenciaRepository alertaEvidenciaRepository;
+
+    @Autowired
+    private com.example.AppSegurity.Repositorys.SesionSupervisionRepository sesionSupervisionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     public Map<String, Object> obtenerResumen() {
@@ -44,18 +50,48 @@ public class AdminService {
         long totalEstudiantes = estudianteRepository.count();
         long totalExamenes = examenRepository.count();
 
-        long profesActivos = profesorRepository.findAll().stream()
-                .filter(p -> p.getEstado() == EstadoUsuario.ACTIVO)
-                .count();
-        long estudiantesActivos = estudianteRepository.findAll().stream()
-                .filter(e -> e.getEstadoUsuario() == EstadoUsuario.ACTIVO)
-                .count();
+        long profesActivos = profesorRepository.countByEstado(EstadoUsuario.ACTIVO);
+        long estudiantesActivos = estudianteRepository.countByEstadoUsuario(EstadoUsuario.ACTIVO);
+
+        long totalSesiones = sesionSupervisionRepository.count();
+        List<com.example.AppSegurity.Models.AlertaEvidencia> todasAlertas = alertaEvidenciaRepository.findAll();
+        long totalAlertas = todasAlertas.size();
+        long alertasVision = 0;
+        long alertasAudio = 0;
+        long alertasProcesos = 0;
+        long alertasTeclado = 0;
+        long alertasConHash = 0;
+        for (com.example.AppSegurity.Models.AlertaEvidencia a : todasAlertas) {
+            if (a.getClaseAlerta() != null) {
+                switch (a.getClaseAlerta()) {
+                    case VISION, OBJETO, CAMARA_OBSTRUIDA -> alertasVision++;
+                    case AUDIO -> alertasAudio++;
+                    case TECLADO -> alertasTeclado++;
+                    default -> alertasProcesos++;
+                }
+            } else {
+                alertasProcesos++;
+            }
+            boolean tieneHash = (a.getHashWebcam() != null && !a.getHashWebcam().isBlank())
+                    || (a.getHashPantalla() != null && !a.getHashPantalla().isBlank())
+                    || (a.getHashAudio() != null && !a.getHashAudio().isBlank());
+            if (tieneHash) {
+                alertasConHash++;
+            }
+        }
 
         resumen.put("totalProfesores", totalProfes);
         resumen.put("totalEstudiantes", totalEstudiantes);
         resumen.put("totalExamenes", totalExamenes);
         resumen.put("profesoresActivos", profesActivos);
         resumen.put("estudiantesActivos", estudiantesActivos);
+        resumen.put("totalSesiones", totalSesiones);
+        resumen.put("totalAlertas", totalAlertas);
+        resumen.put("alertasVision", alertasVision);
+        resumen.put("alertasAudio", alertasAudio);
+        resumen.put("alertasProcesos", alertasProcesos);
+        resumen.put("alertasTeclado", alertasTeclado);
+        resumen.put("alertasConHash", alertasConHash);
         return resumen;
     }
 
@@ -98,9 +134,7 @@ public class AdminService {
             if (actorEmail != null && actorEmail.equalsIgnoreCase(prof.getEmailInstitucional())) {
                 throw new IllegalArgumentException("No puedes quitarte el rol SuperADMIN a tu propia cuenta.");
             }
-            long totalSuperAdmins = profesorRepository.findAll().stream()
-                    .filter(p -> esSuperAdmin(p) && p.getEstado() == EstadoUsuario.ACTIVO)
-                    .count();
+            long totalSuperAdmins = profesorRepository.countByRolIgnoreCaseAndEstado(ROL_SUPERADMIN, EstadoUsuario.ACTIVO);
             if (totalSuperAdmins <= 1) {
                 throw new IllegalArgumentException("Debe existir al menos una cuenta SuperADMIN en el sistema.");
             }

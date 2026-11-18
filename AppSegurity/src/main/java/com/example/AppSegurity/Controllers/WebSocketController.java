@@ -17,8 +17,12 @@ public class WebSocketController {
     public Map<String, Object> reenviarComando(@DestinationVariable String sesionId, Map<String, Object> comando) {
         if (comando != null && "FRAUDE".equals(comando.get("comando"))) {
             sesionSupervisionRepository.findById(sesionId).ifPresent(sesion -> {
-                sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.ANULADA);
-                sesionSupervisionRepository.save(sesion);
+                var estado = sesion.getEstadoSesion();
+                if (estado != com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA
+                        && estado != com.example.AppSegurity.Enums.EstadoSesion.APELACION_CURSO) {
+                    sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.ANULADA);
+                    sesionSupervisionRepository.save(sesion);
+                }
             });
         }
         return comando;

@@ -12,6 +12,11 @@ public class ReglasExamenResponse {
     private String sensibilidad_ia;
     private Integer duracion_examen;
     private Integer reintentos_conexion;
+    private Boolean activar_reconocimiento_facial = true;
+    private Boolean activar_deteccion_objetos = true;
+    private Boolean activar_analisis_audio = true;
+    private Boolean activar_monitoreo_procesos = true;
+    private Boolean activar_analisis_teclado = true;
 
     public ReglasExamenResponse(List<String> procesos, List<String> urls, String sensibilidad, Integer duracion) {
         this(procesos, urls, sensibilidad, duracion, 3);

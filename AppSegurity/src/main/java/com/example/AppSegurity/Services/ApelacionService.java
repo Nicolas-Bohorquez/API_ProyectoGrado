@@ -44,6 +44,11 @@ public class ApelacionService {
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("No se encontró la sesión"));
 
+        if (sesionSupervision.getApelacion() != null
+                && sesionSupervision.getApelacion().getApelacionSolicitada() == ApelacionSolicitada.SOLICITADA) {
+            throw new ErrorNegocioException("Ya existe una apelación registrada para esta sesión.");
+        }
+
         //Crear el proceso de apelación del estudiante
         Proceso_apelacion procesoApelacion = new Proceso_apelacion();
 
@@ -70,33 +75,6 @@ public class ApelacionService {
         sesionSupervisionRepository.save(sesionSupervision);
     }
 
-    public void resolverApelacion(String sesionId, Boolean decisionApelacion, String resolucionComite) {
-        SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
-                .orElseThrow(() -> new ErrorNegocioException("No se encontró la sesión"));
-
-        //Extración de la apelación de la sesion del estudiante
-        Proceso_apelacion procesoApelacion = sesionSupervision.getApelacion();
-
-        //Elección del comite
-        //1. En caso de ser positiva se devolvera aprobada a favor y el estudiante es inocente
-        if (decisionApelacion == true) {
-            procesoApelacion.setEstadoApelacion(EstadoApelacion.APROBADA_A_FAVOR);
-            //2. En caso de ser negativa se devolvera un rechazo del comite y el estudiante sera culpable de fraude   
-        } else {
-            procesoApelacion.setEstadoApelacion(EstadoApelacion.RECHAZADA_FRAUDE_MANTENIDO);
-        }
-
-        //Se guarda la resolución que emitio el comite  
-        procesoApelacion.setResolucionComite(resolucionComite);
-
-        //Se cambia el estado de la sesion y de la apelación como finalizada
-        sesionSupervision.setEstadoSesion(EstadoSesion.FINALIZADA);
-
-        //Se guarda los cambios en la base de datos
-        sesionSupervisionRepository.save(sesionSupervision);
-
-    }
-
     public List<SesionSupervision> obtenerApelacionesPendientes(String profesorId) {
 
         //1. Buscar todos los examenes que ha creado el profesor
@@ -113,29 +91,57 @@ public class ApelacionService {
         List<SesionSupervision> todas = sesionSupervisionRepository.findByExamenIdIn(idsExamenes);
         List<SesionSupervision> sesiones = new ArrayList<>();
         for (SesionSupervision s : todas) {
-            if (s.getApelacion() != null) {
+            if (s.getApelacion() != null
+                    && s.getApelacion().getApelacionSolicitada() == ApelacionSolicitada.SOLICITADA) {
                 sesiones.add(s);
             }
         }
         
-        // Populate student names
+        if (sesiones.isEmpty()) {
+            return sesiones;
+        }
+
+        // Consultar todos los estudiantes en un único lote para evitar consultas N+1
+        java.util.Set<String> estudianteIds = new java.util.HashSet<>();
         for (SesionSupervision s : sesiones) {
-            estudianteRepository.findById(s.getEstudianteId()).ifPresent(est -> {
+            if (s.getEstudianteId() != null) {
+                estudianteIds.add(s.getEstudianteId());
+            }
+        }
+        java.util.Map<String, Estudiante> estudiantesPorId = new java.util.HashMap<>();
+        if (!estudianteIds.isEmpty()) {
+            for (Estudiante est : estudianteRepository.findAllById(estudianteIds)) {
+                estudiantesPorId.put(est.getEstudianteId(), est);
+            }
+        }
+
+        for (SesionSupervision s : sesiones) {
+            Estudiante est = s.getEstudianteId() != null ? estudiantesPorId.get(s.getEstudianteId()) : null;
+            if (est != null) {
                 s.setNombreEstudiante(est.getNombre() + " " + est.getApellidos());
-            });
+            }
         }
         
         return sesiones;
     }
     
-        public void terminarApelacion(String sesionId, String resolucionComite, EstadoApelacion estadoApelacion) {
-        
+    public void terminarApelacion(String sesionId, String resolucionComite, EstadoApelacion estadoApelacion) {
+        if (estadoApelacion != EstadoApelacion.APROBADA_A_FAVOR
+                && estadoApelacion != EstadoApelacion.RECHAZADA_FRAUDE_MANTENIDO) {
+            throw new ErrorNegocioException("El estado de resolución debe ser APROBADA_A_FAVOR o RECHAZADA_FRAUDE_MANTENIDO.");
+        }
+
         // Buscamos la sesión donde ocurrió la apelación
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
         
         // Verificamos que sí tenga un proceso de apelación activo
         if (sesionSupervision.getApelacion() != null) {
+            EstadoApelacion estadoActual = sesionSupervision.getApelacion().getEstadoApelacion();
+            if (estadoActual == EstadoApelacion.APROBADA_A_FAVOR
+                    || estadoActual == EstadoApelacion.RECHAZADA_FRAUDE_MANTENIDO) {
+                throw new ErrorNegocioException("Esta apelación ya fue resuelta previamente.");
+            }
             
             // Le guardamos el comentario o resolución del comité
             sesionSupervision.getApelacion().setResolucionComite(resolucionComite);

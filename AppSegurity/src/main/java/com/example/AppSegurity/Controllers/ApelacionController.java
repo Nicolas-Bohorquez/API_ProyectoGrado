@@ -24,9 +24,16 @@ public class ApelacionController {
     @Autowired com.example.AppSegurity.Security.AutorizacionService autorizacion;
     
     
-   @PostMapping("/{sesionId}/solicitar")
+    @PostMapping("/{sesionId}/solicitar")
     public ResponseEntity<String> solicitarApelacion(@PathVariable String sesionId, @RequestBody String argumentoEstudiante, org.springframework.security.core.Authentication authentication) {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
+        if (com.example.AppSegurity.Security.AutorizacionService.esProfesor(authentication)
+                && !com.example.AppSegurity.Security.AutorizacionService.esAdmin(authentication)) {
+            throw new org.springframework.security.access.AccessDeniedException("Solo el estudiante titular puede solicitar una apelación.");
+        }
+        if (argumentoEstudiante != null && argumentoEstudiante.length() > 2000) {
+            return ResponseEntity.status(400).body("Error al enviar apelación: El argumento no puede superar los 2000 caracteres.");
+        }
         try {
             //Llamamos a apelacionService para solicitar la apelación del estudiante
             apelacionService.solicitarApelacion(sesionId, argumentoEstudiante);

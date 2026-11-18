@@ -79,7 +79,9 @@ public class AutenticacionController {
             String token = autenticacionService.loginProfesor(loginRequest.getEmail(), loginRequest.getPassword());
             
             // Buscamos al profesor para obtener su ID real
-            com.example.AppSegurity.Models.Profesor prof = profesorRepository.findByEmailInstitucional(loginRequest.getEmail()).orElse(null);
+            com.example.AppSegurity.Models.Profesor prof = profesorRepository.findByEmailInstitucional(loginRequest.getEmail())
+                    .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(loginRequest.getEmail()))
+                    .orElse(null);
             
             Map<String, String> response = new HashMap<>();
             response.put("token", token);

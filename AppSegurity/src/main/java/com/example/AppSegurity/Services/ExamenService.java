@@ -201,19 +201,29 @@ public class ExamenService {
     @Autowired
     private SesionSupervisionRepository sesionSupervisionRepository;
 
+    private void cerrarSesionesActivas(String codigoExamen) {
+        List<com.example.AppSegurity.Models.SesionSupervision> sesiones =
+                sesionSupervisionRepository.findByExamenId(codigoExamen);
+        List<com.example.AppSegurity.Models.SesionSupervision> porCerrar = new ArrayList<>();
+        for (com.example.AppSegurity.Models.SesionSupervision sesion : sesiones) {
+            if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA
+                    || sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INTERRUMPIDA) {
+                sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
+                porCerrar.add(sesion);
+            }
+        }
+        if (!porCerrar.isEmpty()) {
+            sesionSupervisionRepository.saveAll(porCerrar);
+        }
+    }
+
     public void abrirSalaExamen(String codigoExamen) {
         //Buscar y traer el examen de la base de datos
         Examen examen = examenRepository.findById(codigoExamen)
                 .orElseThrow(() -> new ErrorNegocioException("Error al traer la información del examen"));
 
         // Limpiar sesiones previas (fantasmas) para que el examen inicie en blanco
-        List<com.example.AppSegurity.Models.SesionSupervision> sesionesViejas = sesionSupervisionRepository.findByExamenId(codigoExamen);
-        for (com.example.AppSegurity.Models.SesionSupervision sesion : sesionesViejas) {
-            if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA) {
-                sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
-                sesionSupervisionRepository.save(sesion);
-            }
-        }
+        cerrarSesionesActivas(codigoExamen);
 
         //Cambiamos el estado del PIN del examen a activo
         examen.getControlAcceso().setEstadoPin(Estado_pin.ACTIVO);
@@ -231,8 +241,9 @@ public class ExamenService {
         //Cambiamos el estado del PIN del examen a finalizado
         examen.getControlAcceso().setEstadoPin(Estado_pin.FINALIZADO);
 
-        //Guardamos cambios
+        //Guardamos cambios del examen y finalizamos sesiones activas/interrumpidas pendientes
         examenRepository.save(examen);
+        cerrarSesionesActivas(codigoExamen);
     }
 
     public List<Examen> obtenerExamenesProfesor(String profesorId) {
@@ -252,19 +263,7 @@ public class ExamenService {
             System.out.println("[CRON] Finalizando examen expirado: " + examen.getCodigoExamen());
             examen.getControlAcceso().setEstadoPin(Estado_pin.FINALIZADO);
             examenRepository.save(examen);
-
-            List<com.example.AppSegurity.Models.SesionSupervision> sesiones =
-                    sesionSupervisionRepository.findByExamenId(examen.getCodigoExamen());
-            List<com.example.AppSegurity.Models.SesionSupervision> porCerrar = new ArrayList<>();
-            for (com.example.AppSegurity.Models.SesionSupervision sesion : sesiones) {
-                if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA) {
-                    sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
-                    porCerrar.add(sesion);
-                }
-            }
-            if (!porCerrar.isEmpty()) {
-                sesionSupervisionRepository.saveAll(porCerrar);
-            }
+            cerrarSesionesActivas(examen.getCodigoExamen());
         }
     }
 

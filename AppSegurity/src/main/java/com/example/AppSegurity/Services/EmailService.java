@@ -85,7 +85,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
 
             helper.setTo(correo);
-            helper.setSubject("Código de Verificación [" + codigoOtp + "] - Registro UPC Proctor");
+            helper.setSubject("Código de Verificación - Registro UPC Proctor");
 
             String nombreDest = escapar((nombre != null && !nombre.isBlank()) ? nombre : "Usuario Institucional");
             String rolTexto = "PROFESOR".equalsIgnoreCase(rol) ? "Docente / Evaluador" : "Estudiante";
@@ -123,8 +123,6 @@ public class EmailService {
             System.out.println("[REGISTRO OTP] Correo enviado exitosamente a " + correo);
         } catch (Exception e) {
             System.err.println("[REGISTRO OTP ERROR] No se pudo despachar el correo SMTP a " + correo + ": " + e.getMessage());
-            // Mantener el log en consola para soporte en entorno local/pruebas
-            System.out.println("[OTP BACKUP CONSOLA] >>> CÓDIGO VÁLIDO PARA " + correo + ": " + codigoOtp + " <<<");
         }
     }
 
@@ -136,7 +134,7 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
 
             helper.setTo(correo);
-            helper.setSubject("Restablecimiento de Contraseña [" + codigoOtp + "] - UPC Proctor");
+            helper.setSubject("Restablecimiento de Contraseña - UPC Proctor");
 
             String nombreDest = escapar((nombre != null && !nombre.isBlank()) ? nombre : "Usuario Institucional");
 
@@ -173,7 +171,6 @@ public class EmailService {
             System.out.println("[RECUPERACIÓN OTP] Correo enviado exitosamente a " + correo);
         } catch (Exception e) {
             System.err.println("[RECUPERACIÓN OTP ERROR] Fallo envío SMTP a " + correo + ": " + e.getMessage());
-            System.out.println("[OTP BACKUP RECUPERACIÓN CONSOLA] >>> CÓDIGO PARA " + correo + ": " + codigoOtp + " <<<");
         }
     }
 }

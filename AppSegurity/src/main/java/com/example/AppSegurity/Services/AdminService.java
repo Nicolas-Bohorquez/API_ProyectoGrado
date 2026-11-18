@@ -86,6 +86,9 @@ public class AdminService {
 
     public void editarProfesor(String codigoProfesor, Map<String, String> datos) {
         Profesor prof = obtenerProfesor(codigoProfesor);
+        if (esSuperAdmin(prof)) {
+            throw new IllegalArgumentException("No se puede editar una cuenta SuperADMIN.");
+        }
         String nombre = requerido(datos, "nombre");
         String apellidos = requerido(datos, "apellidos");
         String cedula = requerido(datos, "cedula");

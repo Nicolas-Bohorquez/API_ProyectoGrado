@@ -59,6 +59,7 @@ class CuentasSeguridadTests {
 	private final ObjectMapper json = new ObjectMapper();
 	@Autowired private PasswordEncoder passwordEncoder;
 	@Autowired private LimitadorIntentos limitador;
+	@Autowired private com.example.AppSegurity.Security.LimitadorIntentosPorIp limitadorPorIp;
 	@Autowired private JwtProveedor jwtProveedor;
 	@Autowired private EstudianteRepository estudianteRepository;
 	@Autowired private ProfesorRepository profesorRepository;
@@ -96,6 +97,7 @@ class CuentasSeguridadTests {
 		estudianteRepository.deleteById(estId); profesorRepository.deleteById(profId); examenRepository.deleteById(examen);
 		estudiantesCreados.forEach(estudianteRepository::deleteById);
 		for (String c : correosLimitador) { limitador.registrarExito("login:" + c); limitador.registrarExito("otp:" + c); limitador.registrarExito("cambio:" + c); }
+		limitadorPorIp.registrarExito("127.0.0.1"); // IP por defecto de MockMvc: que un test no deje fallos para el siguiente
 	}
 
 	private MvcResult login(String ruta, String email, String clave) throws Exception {

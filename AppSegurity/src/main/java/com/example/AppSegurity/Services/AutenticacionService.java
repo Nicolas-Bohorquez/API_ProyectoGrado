@@ -47,6 +47,9 @@ public class AutenticacionService {
     @Autowired
     private com.example.AppSegurity.Security.LimitadorIntentos limitador;
 
+    @Autowired
+    private com.example.AppSegurity.Security.LimitadorIntentosPorIp limitadorPorIp;
+
     // Los códigos OTP deben ser impredecibles: SecureRandom, no java.util.Random
     private static final java.security.SecureRandom OTP_ALEATORIO = new java.security.SecureRandom();
     private static final int MAX_INTENTOS_OTP = 5;                 // tras 5 códigos erróneos el OTP se invalida
@@ -363,17 +366,44 @@ public class AutenticacionService {
         return conLimiteDeIntentos(email, () -> loginProfesorInterno(email, passwordTextoPlano));
     }
 
-    /** Tras 5 contraseñas erróneas seguidas para un correo, ese correo queda bloqueado 15 minutos. */
+    /**
+     * Tras 5 contraseñas erróneas seguidas para un correo, ese correo queda bloqueado 15 minutos. Además, para frenar
+     * "credential spraying" (una misma clave probada contra muchas cuentas distintas, que nunca dispara el límite por
+     * cuenta), se cuentan también los fallos por IP con un umbral mucho más alto (ver LimitadorIntentosPorIp).
+     */
     private String conLimiteDeIntentos(String email, java.util.function.Supplier<String> inicio) {
         String clave = "login:" + email;
+        String ip = ipDelClienteActual();
         limitador.verificar(clave);
+        limitadorPorIp.verificar(ip);
         try {
             String token = inicio.get();
             limitador.registrarExito(clave);
             return token;
         } catch (org.springframework.security.core.AuthenticationException e) {
             limitador.registrarFallo(clave);
+            limitadorPorIp.registrarFallo(ip);
             throw e;
+        }
+    }
+
+    /**
+     * IP real del cliente para la petición HTTP en curso. Railway (y cualquier proxy delante del backend) hace que
+     * todas las peticiones lleguen desde la MISMA IP interna si se usa request.getRemoteAddr() a secas — eso volvería
+     * este límite global por accidente. Por eso se lee primero X-Forwarded-For (la IP original que agrega el proxy).
+     */
+    private static String ipDelClienteActual() {
+        try {
+            var attrs = org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes();
+            var request = ((org.springframework.web.context.request.ServletRequestAttributes) attrs).getRequest();
+            String xff = request.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                return xff.split(",")[0].trim();
+            }
+            return request.getRemoteAddr();
+        } catch (IllegalStateException e) {
+            // No hay una petición HTTP en curso (p. ej. se llamó directo desde una prueba): no se puede limitar por IP.
+            return "sin-contexto-http";
         }
     }
 

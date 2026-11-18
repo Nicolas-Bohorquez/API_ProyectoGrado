@@ -36,9 +36,9 @@ public class ConfiguracionSeguridad {
                 // OJO: Asumo que tus Controladores tendrán "/api/auth/login..."
                 .requestMatchers("/api/auth/**").permitAll()
                 //Solo para administradores y superadmin
-                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                .requestMatchers("/api/admin/**").hasRole("SUPERADMIN")
                 //Solo para los profesores (y administradores)
-                .requestMatchers("/api/profesor/**").hasAnyRole("PROFESOR", "ADMIN", "SUPERADMIN")
+                .requestMatchers("/api/profesor/**").hasAnyRole("PROFESOR", "SUPERADMIN")
                 //Solo para los estudiantes
                 .requestMatchers("/api/estudiante/**").hasRole("ESTUDIANTE")
                 // Rutas que usa la app del estudiante durante el examen (cualquier usuario autenticado)
@@ -51,7 +51,7 @@ public class ConfiguracionSeguridad {
                 .requestMatchers(HttpMethod.POST, "/api/apelaciones/*/solicitar").authenticated()
                 // El resto de supervisión, exámenes y apelaciones es solo del personal docente
                 .requestMatchers("/api/examenes/**", "/api/supervision/**", "/api/apelaciones/**")
-                    .hasAnyRole("PROFESOR", "ADMIN", "SUPERADMIN")
+                    .hasAnyRole("PROFESOR", "SUPERADMIN")
                 // Cualquier otra ruta de la API (Ej: /api/examenes) exigirá que el token sea válido
                 .anyRequest().authenticated()
             )

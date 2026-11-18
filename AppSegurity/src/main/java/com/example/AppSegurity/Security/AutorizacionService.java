@@ -27,7 +27,7 @@ import com.example.AppSegurity.Repositorys.SesionSupervisionRepository;
  * docente podía ver los exámenes y evidencias de otros.
  *
  * Regla común: si el recurso NO existe no se rechaza aquí (el servicio responde "no existe" como siempre); solo se
- * rechaza cuando existe y pertenece a otra persona. Los administradores (ROLE_ADMIN / ROLE_SUPERADMIN) pueden todo.
+ * rechaza cuando existe y pertenece a otra persona. El administrador (ROLE_SUPERADMIN) puede todo.
  */
 @Service
 public class AutorizacionService {
@@ -51,7 +51,7 @@ public class AutorizacionService {
     }
 
     public static boolean esAdmin(Authentication a) {
-        return tieneRol(a, "ROLE_ADMIN") || tieneRol(a, "ROLE_SUPERADMIN");
+        return tieneRol(a, "ROLE_SUPERADMIN");
     }
 
     public static boolean esEstudiante(Authentication a) {

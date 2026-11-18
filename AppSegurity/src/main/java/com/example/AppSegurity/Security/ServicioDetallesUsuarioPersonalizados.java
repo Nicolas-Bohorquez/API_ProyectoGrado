@@ -36,10 +36,7 @@ public class ServicioDetallesUsuarioPersonalizados implements UserDetailsService
             //Spring necesita saber el email, la contraseña (para verificarla luego) y una lista de roles.
             List<SimpleGrantedAuthority> roles = new ArrayList<>();
             roles.add(new SimpleGrantedAuthority("ROLE_PROFESOR")); //Etiqueta para el rol de profesor
-            if ("ADMIN".equalsIgnoreCase(profesor.getRol()) 
-                    || "SUPERADMIN".equalsIgnoreCase(profesor.getRol())
-                    || (profesor.getCodigoProfesor() != null && profesor.getCodigoProfesor().toUpperCase().startsWith("ADMIN"))) {
-                roles.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            if ("SUPERADMIN".equalsIgnoreCase(profesor.getRol())) {
                 roles.add(new SimpleGrantedAuthority("ROLE_SUPERADMIN"));
             }
             return new User(profesor.getEmailInstitucional(), profesor.getPasswordHash(), roles);

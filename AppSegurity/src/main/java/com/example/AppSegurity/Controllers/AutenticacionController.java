@@ -73,9 +73,6 @@ public class AutenticacionController {
             if(prof != null) {
                 response.put("profesorId", prof.getCodigoProfesor());
                 String rol = (prof.getRol() != null && !prof.getRol().isBlank()) ? prof.getRol() : "PROFESOR";
-                if (prof.getCodigoProfesor() != null && prof.getCodigoProfesor().toUpperCase().startsWith("ADMIN")) {
-                    rol = "SUPERADMIN";
-                }
                 response.put("rol", rol);
                 response.put("nombre", ((prof.getNombre() != null ? prof.getNombre() : "") + " " + (prof.getApellidos() != null ? prof.getApellidos() : "")).trim());
             }

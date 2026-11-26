@@ -44,6 +44,10 @@ public class ApelacionService {
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("No se encontró la sesión"));
 
+        if (sesionSupervision.getEstadoSesion() != EstadoSesion.ANULADA) {
+            throw new ErrorNegocioException("Solo se puede solicitar una apelación sobre una sesión anulada.");
+        }
+
         if (sesionSupervision.getApelacion() != null
                 && sesionSupervision.getApelacion().getApelacionSolicitada() == ApelacionSolicitada.SOLICITADA) {
             throw new ErrorNegocioException("Ya existe una apelación registrada para esta sesión.");

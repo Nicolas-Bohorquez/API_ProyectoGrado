@@ -38,6 +38,7 @@ public class RegistroSuscripcionesAlertas implements ApplicationListener<Abstrac
     private final Map<String, Set<String>> suscripcionesPorExamen = new ConcurrentHashMap<>();
     private final Map<String, String> examenPorClaveSub = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> clavesPorWsSession = new ConcurrentHashMap<>();
+    private final Set<String> sesionesWsActivas = ConcurrentHashMap.newKeySet();
 
     @Autowired
     private SesionSupervisionRepository sesionSupervisionRepository;
@@ -51,7 +52,12 @@ public class RegistroSuscripcionesAlertas implements ApplicationListener<Abstrac
 
     @Override
     public void onApplicationEvent(AbstractSubProtocolEvent event) {
-        if (event instanceof SessionSubscribeEvent) {
+        if (event instanceof org.springframework.web.socket.messaging.SessionConnectEvent) {
+            String sid = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
+            if (sid != null && !sid.isBlank()) {
+                sesionesWsActivas.add(sid);
+            }
+        } else if (event instanceof SessionSubscribeEvent) {
             manejarSuscripcion((SessionSubscribeEvent) event);
         } else if (event instanceof SessionUnsubscribeEvent) {
             manejarDesuscripcion((SessionUnsubscribeEvent) event);
@@ -65,7 +71,17 @@ public class RegistroSuscripcionesAlertas implements ApplicationListener<Abstrac
             return false;
         }
         Set<String> subs = suscripcionesPorExamen.get(examenId);
-        return subs != null && !subs.isEmpty();
+        if (subs == null || subs.isEmpty()) {
+            return false;
+        }
+        for (String claveSub : subs) {
+            int sep = claveSub.indexOf(':');
+            String wsSessionId = sep > 0 ? claveSub.substring(0, sep) : claveSub;
+            if (sesionesWsActivas.contains(wsSessionId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void manejarSuscripcion(SessionSubscribeEvent event) {
@@ -103,6 +119,7 @@ public class RegistroSuscripcionesAlertas implements ApplicationListener<Abstrac
         if (wsSessionId == null || wsSessionId.isBlank()) {
             return;
         }
+        sesionesWsActivas.remove(wsSessionId);
         if (stompAutorizacionInterceptor != null) {
             stompAutorizacionInterceptor.invalidarWsSession(wsSessionId);
         }
@@ -116,6 +133,7 @@ public class RegistroSuscripcionesAlertas implements ApplicationListener<Abstrac
     }
 
     private void registrarSuscripcion(String wsSessionId, String claveSub, String examenId) {
+        sesionesWsActivas.add(wsSessionId);
         String previo = examenPorClaveSub.put(claveSub, examenId);
         if (previo != null && !previo.equals(examenId)) {
             quitarClaveDeExamen(previo, claveSub);

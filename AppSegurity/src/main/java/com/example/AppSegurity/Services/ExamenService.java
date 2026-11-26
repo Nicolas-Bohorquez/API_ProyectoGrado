@@ -28,6 +28,9 @@ public class ExamenService {
 
     @Autowired
     private com.example.AppSegurity.Repositorys.EstudianteRepository estudianteRepository;
+
+    @Autowired
+    private com.example.AppSegurity.Repositorys.ProfesorRepository profesorRepository;
     
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
@@ -40,7 +43,37 @@ public class ExamenService {
     public List<java.util.Map<String, String>> bulkInscribirEstudiantes(String codigoExamen, List<com.example.AppSegurity.Models.Estudiante> estudiantesCsv) {
         List<java.util.Map<String, String>> credencialesNuevas = new ArrayList<>();
         Examen examen = examenRepository.findById(codigoExamen).orElseThrow(() -> new ErrorNegocioException("Examen no encontrado"));
+        if (estudiantesCsv == null || estudiantesCsv.isEmpty()) {
+            return credencialesNuevas;
+        }
         String materiaCodigo = examen.getMateriaCodigo();
+
+        java.util.Map<String, String> correoPorCedulaEnLote = new java.util.HashMap<>();
+        for (com.example.AppSegurity.Models.Estudiante est : estudiantesCsv) {
+            String cedula = est.getCedula() == null ? "" : est.getCedula().strip();
+            if (cedula.isEmpty()) {
+                throw new ErrorNegocioException("Cada estudiante de la lista debe incluir su cédula.");
+            }
+            est.setCedula(cedula);
+            String emailNorm = est.getEmail() == null ? "" : est.getEmail().strip().toLowerCase();
+            if (!emailNorm.isEmpty()) {
+                if (profesorRepository.findByEmailInstitucionalIgnoreCase(emailNorm).isPresent()) {
+                    throw new ErrorNegocioException("El correo " + emailNorm + " pertenece a un docente registrado y no puede asignarse a un estudiante.");
+                }
+                for (com.example.AppSegurity.Models.Estudiante conMismoCorreo : estudianteRepository.findByEmailIgnoreCase(emailNorm)) {
+                    if (!cedula.equals(conMismoCorreo.getCedula())) {
+                        throw new ErrorNegocioException("El correo " + emailNorm + " ya está registrado para otro estudiante.");
+                    }
+                }
+                String otraCedula = correoPorCedulaEnLote.putIfAbsent(emailNorm, cedula);
+                if (otraCedula != null && !otraCedula.equals(cedula)) {
+                    throw new ErrorNegocioException("El correo " + emailNorm + " está duplicado para distintas cédulas en la lista.");
+                }
+                est.setEmail(emailNorm);
+            } else {
+                est.setEmail(null);
+            }
+        }
         
         for (com.example.AppSegurity.Models.Estudiante est : estudiantesCsv) {
             java.util.Optional<com.example.AppSegurity.Models.Estudiante> existenteOpt = estudianteRepository.findByCedula(est.getCedula());
@@ -121,9 +154,10 @@ public class ExamenService {
                 true, // Análisis de Teclado
                 Sensibilidad_IA.MEDIA,
                 120,
-                0,
+                3,
                 new ArrayList<String>(),
                 new ArrayList<String>());
+        configuracionExamenPorDefecto.setIntentosMaximos(3);
 
         //Creamos y armamos al examen con todos los datos listos
         Examen examen = new Examen(
@@ -222,10 +256,13 @@ public class ExamenService {
         List<com.example.AppSegurity.Models.SesionSupervision> sesiones =
                 sesionSupervisionRepository.findByExamenId(codigoExamen);
         List<com.example.AppSegurity.Models.SesionSupervision> porCerrar = new ArrayList<>();
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
         for (com.example.AppSegurity.Models.SesionSupervision sesion : sesiones) {
             if (sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INICIADA
                     || sesion.getEstadoSesion() == com.example.AppSegurity.Enums.EstadoSesion.INTERRUMPIDA) {
                 sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA);
+                sesion.setFechaFinalizacion(ahora);
+                sesion.setCerradaPorSalaDocente(Boolean.TRUE);
                 porCerrar.add(sesion);
             }
         }

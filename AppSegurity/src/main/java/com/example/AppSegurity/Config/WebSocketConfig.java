@@ -36,10 +36,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .queueCapacity(1000);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    @org.springframework.beans.factory.annotation.Qualifier("messageBrokerTaskScheduler")
+    private org.springframework.scheduling.TaskScheduler brokerTaskScheduler;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Por aquí viajaran las alertas hacia el profesor en tiempo real (Ej: /topic/alertas)
-        config.enableSimpleBroker("/topic");
+        config.enableSimpleBroker("/topic")
+                .setTaskScheduler(brokerTaskScheduler)
+                .setHeartbeatValue(new long[]{10000, 10000});
         config.setApplicationDestinationPrefixes("/app");
     }
 

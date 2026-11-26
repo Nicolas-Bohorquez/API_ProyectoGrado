@@ -11,7 +11,9 @@ public class ReglasExamenResponse {
     private List<String> urls_permitidas;
     private String sensibilidad_ia;
     private Integer duracion_examen;
+    private Integer segundos_restantes;
     private Integer reintentos_conexion;
+    private Integer intentos_maximos = 3;
     private Boolean activar_reconocimiento_facial = true;
     private Boolean activar_deteccion_objetos = true;
     private Boolean activar_analisis_audio = true;

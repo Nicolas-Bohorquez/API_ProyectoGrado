@@ -193,7 +193,11 @@ public class SesionSupervisionService {
 
                         // Mismo dispositivo: reconexión autorizada
                         s.setEstadoSesion(EstadoSesion.INICIADA);
-                        s.setUltimoHeartbeat(LocalDateTime.now());
+                        LocalDateTime ahoraReconexion = LocalDateTime.now();
+                        if (s.getFechaInicio() == null) {
+                            s.setFechaInicio(ahoraReconexion);
+                        }
+                        s.setUltimoHeartbeat(ahoraReconexion);
                         if (conexionInfo != null) {
                             s.setConexion(conexionInfo);
                         }
@@ -208,7 +212,9 @@ public class SesionSupervisionService {
                             webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + s.getExamenId(), evento);
                         } catch (Exception e) {}
                         return s; // Reutiliza la sesion si ya estaba adentro en el mismo equipo
-                    } else if (s.getEstadoSesion() == EstadoSesion.FINALIZADA || s.getEstadoSesion() == EstadoSesion.ANULADA || s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
+                    } else if ((s.getEstadoSesion() == EstadoSesion.FINALIZADA && !Boolean.TRUE.equals(s.getCerradaPorSalaDocente()))
+                            || s.getEstadoSesion() == EstadoSesion.ANULADA
+                            || s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
                         intentosCompletados++;
                         
                         // Si fue anulada por fraude o esta en revision, activamos la bandera de bloqueo
@@ -248,7 +254,9 @@ public class SesionSupervisionService {
             nuevaSesion.setEstudianteId(estudiante.getEstudianteId());
             nuevaSesion.setConexion(conexionInfo);
             nuevaSesion.setEstadoSesion(EstadoSesion.INICIADA);
-            nuevaSesion.setUltimoHeartbeat(LocalDateTime.now());
+            LocalDateTime ahoraInicio = LocalDateTime.now();
+            nuevaSesion.setFechaInicio(ahoraInicio);
+            nuevaSesion.setUltimoHeartbeat(ahoraInicio);
             nuevaSesion.asegurarClaveSesion();          // clave propia de esta sesión (ya no hay una clave fija para todos)
 
             //Se guarda todo en la base de datos
@@ -338,6 +346,7 @@ public class SesionSupervisionService {
         String sensibilidad = "MEDIA";
         Integer duracion = 120;
         Integer reintentosConexion = 3;
+        Integer intentosMaximos = 3;
         if (examen.getConfiguracionExamen() != null) {
             if (examen.getConfiguracionExamen().getSensibilidadIA() != null) {
                 sensibilidad = examen.getConfiguracionExamen().getSensibilidadIA().toString();
@@ -346,7 +355,12 @@ public class SesionSupervisionService {
                 duracion = examen.getConfiguracionExamen().getDuracionExamen();
             }
             if (examen.getConfiguracionExamen().getPermitirReintentos() != null) {
-                reintentosConexion = Math.max(0, examen.getConfiguracionExamen().getPermitirReintentos());
+                reintentosConexion = Math.max(1, examen.getConfiguracionExamen().getPermitirReintentos());
+            }
+            if (examen.getConfiguracionExamen().getIntentosMaximos() != null) {
+                intentosMaximos = Math.max(1, examen.getConfiguracionExamen().getIntentosMaximos());
+            } else if (examen.getConfiguracionExamen().getPermitirReintentos() != null) {
+                intentosMaximos = Math.max(1, examen.getConfiguracionExamen().getPermitirReintentos());
             }
         }
         
@@ -358,6 +372,7 @@ public class SesionSupervisionService {
             duracion,
             reintentosConexion
         );
+        resp.setIntentos_maximos(intentosMaximos);
         if (cfg != null) {
             resp.setActivar_reconocimiento_facial(cfg.getActivarReconocimientoFacial() == null || cfg.getActivarReconocimientoFacial());
             resp.setActivar_deteccion_objetos(cfg.getActivarDeteccionObjetos() == null || cfg.getActivarDeteccionObjetos());
@@ -365,7 +380,23 @@ public class SesionSupervisionService {
             resp.setActivar_monitoreo_procesos(cfg.getActivarMonitoreoProcesos() == null || cfg.getActivarMonitoreoProcesos());
             resp.setActivar_analisis_teclado(cfg.getActivarAnalisisTeclado() == null || cfg.getActivarAnalisisTeclado());
         }
+        resp.setSegundos_restantes(calcularSegundosRestantes(sesion, examen, duracion));
         return resp;
+    }
+
+    private static int calcularSegundosRestantes(SesionSupervision sesion, Examen examen, Integer duracionMin) {
+        long duracionSeg = (duracionMin != null && duracionMin > 0) ? duracionMin * 60L : 7200L;
+        LocalDateTime ahora = LocalDateTime.now();
+        long restantes = duracionSeg;
+        if (sesion != null && sesion.getFechaInicio() != null) {
+            long transcurridos = Math.max(0L, java.time.Duration.between(sesion.getFechaInicio(), ahora).getSeconds());
+            restantes = Math.max(0L, duracionSeg - transcurridos);
+        }
+        if (examen != null && examen.getFechaExamen() != null && examen.getFechaExamen().getHoraFin() != null) {
+            long hastaCierre = Math.max(0L, java.time.Duration.between(ahora, examen.getFechaExamen().getHoraFin()).getSeconds());
+            restantes = Math.min(restantes, hastaCierre);
+        }
+        return (int) Math.min(restantes, Integer.MAX_VALUE);
     }
 
     private String formatearNombreEstudiante(String estudianteId) {
@@ -383,7 +414,35 @@ public class SesionSupervisionService {
         return nombre.isEmpty() ? "Desconocido" : nombre;
     }
 
+    public static class DispositivoNoAutorizadoException extends ErrorNegocioException {
+        public DispositivoNoAutorizadoException(String mensaje) {
+            super(mensaje);
+        }
+    }
+
+    public record ResultadoRegistroAlerta(AlertaEvidencia alerta, boolean docenteNotificado) {}
+
+    private static boolean tieneTexto(String valor) {
+        return valor != null && !valor.isBlank();
+    }
+
+    private static boolean tieneMultimedia(NuevaAlertaRequest req) {
+        return req != null && (tieneTexto(req.getUrlFotoWebcam()) || tieneTexto(req.getUrlCapturaPantalla()) || tieneTexto(req.getUrlAudio()));
+    }
+
+    private boolean dentroDeVentanaDeGracia(SesionSupervision sesion) {
+        if (sesion == null || sesion.getEstadoSesion() != EstadoSesion.FINALIZADA || sesion.getFechaFinalizacion() == null) {
+            return false;
+        }
+        long seg = java.time.Duration.between(sesion.getFechaFinalizacion(), LocalDateTime.now()).getSeconds();
+        return seg <= 120L;
+    }
+
     public AlertaEvidencia registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
+        return registrarAlertaConEntrega(sesionId, alertaRequest).alerta();
+    }
+
+    public ResultadoRegistroAlerta registrarAlertaConEntrega(String sesionId, NuevaAlertaRequest alertaRequest) {
         //La clase decide cómo se guarda la alerta: sin ella (o con un valor desconocido) se rechaza con un mensaje claro
         if (alertaRequest.getClaseAlerta() == null) {
             throw new ErrorNegocioException("claseAlerta ausente o desconocida");
@@ -398,9 +457,9 @@ public class SesionSupervisionService {
                 .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
 
         EstadoSesion estadoActual = sesionSupervision.getEstadoSesion();
-        if (estadoActual == EstadoSesion.FINALIZADA
-                || estadoActual == EstadoSesion.ANULADA
-                || estadoActual == EstadoSesion.APELACION_CURSO) {
+        if (estadoActual == EstadoSesion.ANULADA
+                || estadoActual == EstadoSesion.APELACION_CURSO
+                || (estadoActual == EstadoSesion.FINALIZADA && !dentroDeVentanaDeGracia(sesionSupervision))) {
             throw new ErrorNegocioException("La sesión ya finalizó o fue cerrada");
         }
 
@@ -409,7 +468,27 @@ public class SesionSupervisionService {
             synchronized (candadoDe(locksAlertaSesion, sesionId)) {
                 var existente = alertaEvidenciaRepository.findFirstBySesionIdAndIdCliente(sesionId, idCliente);
                 if (existente.isPresent()) {
-                    return existente.get();
+                    AlertaEvidencia previa = existente.get();
+                    if (previa.isEntregadaDocente()) {
+                        return new ResultadoRegistroAlerta(previa, true);
+                    }
+                    boolean entregadaEnReintento = false;
+                    if (tieneMultimedia(alertaRequest)
+                            && registroSuscripcionesAlertas.hayReceptorActivo(sesionSupervision.getExamenId())) {
+                        previa.setNombreEstudiante(formatearNombreEstudiante(sesionSupervision.getEstudianteId()));
+                        previa.setEsRetransmision(true);
+                        previa.setBase64WebcamTransient(alertaRequest.getUrlFotoWebcam());
+                        previa.setBase64PantallaTransient(alertaRequest.getUrlCapturaPantalla());
+                        previa.setBase64AudioTransient(alertaRequest.getUrlAudio());
+                        try {
+                            webSocketMessagingTemplate.convertAndSend(
+                                    "/topic/alertas/" + sesionSupervision.getExamenId(),
+                                    previa
+                            );
+                            entregadaEnReintento = true;
+                        } catch (Exception ignored) {}
+                    }
+                    return new ResultadoRegistroAlerta(previa, entregadaEnReintento);
                 }
                 return persistirYNofificarAlerta(sesionId, alertaRequest, sesionSupervision, idCliente);
             }
@@ -417,7 +496,7 @@ public class SesionSupervisionService {
         return persistirYNofificarAlerta(sesionId, alertaRequest, sesionSupervision, null);
     }
 
-    private AlertaEvidencia persistirYNofificarAlerta(
+    private ResultadoRegistroAlerta persistirYNofificarAlerta(
             String sesionId,
             NuevaAlertaRequest alertaRequest,
             SesionSupervision sesionSupervision,
@@ -488,6 +567,8 @@ public class SesionSupervisionService {
             
             // Enviar notificacion WebSocket al feed global del profesor
             // El profesor esta suscrito a /topic/alertas/{codigoExamen}
+            boolean receptorActivo = registroSuscripcionesAlertas.hayReceptorActivo(sesionSupervision.getExamenId());
+            boolean enviadaWs = false;
             try {
                 alertaGuardar.setNombreEstudiante(nombreEstudianteBonito); // Formato bonito
                 alertaGuardar.setEsRetransmision(false);
@@ -500,11 +581,12 @@ public class SesionSupervisionService {
                     "/topic/alertas/" + sesionSupervision.getExamenId(),
                     alertaGuardar
                 );
+                enviadaWs = receptorActivo;
             } catch (Exception e) {
                 // Ignorar error de WS
             }
 
-            return alertaGuardar;
+            return new ResultadoRegistroAlerta(alertaGuardar, enviadaWs);
 
         } //En caso de que venga null reportamos una excepción
         else {
@@ -519,6 +601,22 @@ public class SesionSupervisionService {
         return registroSuscripcionesAlertas.hayReceptorActivo(sesion.getExamenId());
     }
 
+    public List<String> obtenerAlertasPendientesDocente(String sesionId) {
+        List<AlertaEvidencia> alertas = alertaEvidenciaRepository.findBySesionIdOrderByHoraCapturaAsc(sesionId);
+        List<String> pendientes = new java.util.ArrayList<>();
+        if (alertas == null) {
+            return pendientes;
+        }
+        for (AlertaEvidencia a : alertas) {
+            if (!a.isEntregadaDocente()
+                    && (tieneTexto(a.getHashWebcam()) || tieneTexto(a.getHashPantalla()) || tieneTexto(a.getHashAudio()))
+                    && a.getIdAlerta() != null) {
+                pendientes.add(a.getIdAlerta());
+            }
+        }
+        return pendientes;
+    }
+
     public boolean retransmitirEvidencia(String sesionId, String alertaId, RetransmitirEvidenciaRequest req) {
         SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
@@ -526,6 +624,9 @@ public class SesionSupervisionService {
                 .orElseThrow(() -> new ErrorNegocioException("La alerta no existe"));
         if (!sesionId.equals(alerta.getSesionId())) {
             throw new ErrorNegocioException("La alerta no pertenece a la sesión");
+        }
+        if (sesion.getEstadoSesion() == EstadoSesion.ANULADA) {
+            throw new ErrorNegocioException("La sesión fue anulada");
         }
         if (!registroSuscripcionesAlertas.hayReceptorActivo(sesion.getExamenId())) {
             return false;
@@ -537,8 +638,12 @@ public class SesionSupervisionService {
             alerta.setBase64PantallaTransient(req.getUrlCapturaPantalla());
             alerta.setBase64AudioTransient(req.getUrlAudio());
         }
-        webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + sesion.getExamenId(), alerta);
-        return true;
+        try {
+            webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + sesion.getExamenId(), alerta);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void finalizarSesion(String idSesion) {
@@ -553,12 +658,53 @@ public class SesionSupervisionService {
 
         //Se cambia el estado a finalizada
         sesionSupervision.setEstadoSesion(EstadoSesion.FINALIZADA);
+        if (sesionSupervision.getFechaFinalizacion() == null) {
+            sesionSupervision.setFechaFinalizacion(LocalDateTime.now());
+        }
+        if (sesionSupervision.getCerradaPorSalaDocente() == null) {
+            sesionSupervision.setCerradaPorSalaDocente(Boolean.FALSE);
+        }
 
         //Se guarda el cambio en la base de datos MongoDB
         sesionSupervisionRepository.save(sesionSupervision);
         if (stompAutorizacionInterceptor != null) {
             stompAutorizacionInterceptor.invalidarSesion(idSesion);
         }
+    }
+
+    public SesionSupervision marcarFraudeDocente(String sesionId, String motivo) {
+        SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
+                .orElseThrow(() -> new ErrorNegocioException("Error al encontrar la sesión"));
+        EstadoSesion estado = sesion.getEstadoSesion();
+        if (estado == EstadoSesion.FINALIZADA || estado == EstadoSesion.APELACION_CURSO) {
+            throw new ErrorNegocioException("La sesión ya finalizó o está en apelación");
+        }
+        String motivoLimpio = (motivo == null || motivo.isBlank())
+                ? "Fraude marcado por el docente"
+                : motivo.strip();
+
+        if (estado != EstadoSesion.ANULADA) {
+            sesion.setEstadoSesion(EstadoSesion.ANULADA);
+            sesion = sesionSupervisionRepository.save(sesion);
+        }
+        if (stompAutorizacionInterceptor != null) {
+            stompAutorizacionInterceptor.invalidarSesion(sesionId);
+        }
+        try {
+            java.util.Map<String, Object> cmd = new java.util.HashMap<>();
+            cmd.put("comando", "FRAUDE");
+            cmd.put("mensaje", motivoLimpio);
+            webSocketMessagingTemplate.convertAndSend("/topic/comandos/" + sesionId, (Object) cmd);
+        } catch (Exception ignored) {}
+        try {
+            java.util.Map<String, Object> evento = new java.util.HashMap<>();
+            evento.put("tipoEvento", "SESION_ANULADA");
+            evento.put("sesionId", sesion.getSesionId());
+            evento.put("estudianteId", sesion.getEstudianteId());
+            evento.put("motivo", motivoLimpio);
+            webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + sesion.getExamenId(), (Object) evento);
+        } catch (Exception ignored) {}
+        return sesion;
     }
 
     public List<AlertaEvidencia> obtenerHistorialAlertas(String sesionId) {
@@ -639,9 +785,10 @@ public class SesionSupervisionService {
     public List<SesionSupervision> obtenerSesionesPorExamen(String examenId, boolean incluirFinalizadas) {
         List<SesionSupervision> sesiones = sesionSupervisionRepository.findByExamenId(examenId);
         
-        // Remover las que ya fueron cerradas/finalizadas si no queremos incluirlas
+        // En la sala en vivo (incluirFinalizadas=false) conservar INICIADA e INTERRUMPIDA para no ocultar desconexiones
         if (!incluirFinalizadas) {
-            sesiones.removeIf(s -> s.getEstadoSesion() != EstadoSesion.INICIADA);
+            sesiones.removeIf(s -> s.getEstadoSesion() != EstadoSesion.INICIADA
+                    && s.getEstadoSesion() != EstadoSesion.INTERRUMPIDA);
         }
         if (sesiones.isEmpty()) {
             return sesiones;
@@ -718,7 +865,7 @@ public class SesionSupervisionService {
 
         if (deviceId != null && sesion.getConexion() != null && sesion.getConexion().getDeviceId() != null) {
             if (!sesion.getConexion().getDeviceId().equalsIgnoreCase(deviceId)) {
-                throw new ErrorNegocioException("Dispositivo no autorizado para esta sesión");
+                throw new DispositivoNoAutorizadoException("Dispositivo no autorizado para esta sesión");
             }
         }
         sesion.setUltimoHeartbeat(LocalDateTime.now());

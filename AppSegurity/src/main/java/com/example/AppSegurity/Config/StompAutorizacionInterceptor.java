@@ -45,6 +45,7 @@ public class StompAutorizacionInterceptor implements ChannelInterceptor {
     private static final Pattern COMANDOS = Pattern.compile("^/topic/comandos/([^/]+)$");
     private static final Pattern VOZ = Pattern.compile("^/topic/voz/([^/]+)$");
     private static final Pattern APP_COMANDO = Pattern.compile("^/app/comando/([^/]+)$");
+    private static final Pattern APP_ACK = Pattern.compile("^/app/alerta-ack/([^/]+)$");
 
     static final long CACHE_SEND_TTL_MS = 20_000L;
     private static final int MAX_ENTRADAS_CACHE = 4096;
@@ -187,6 +188,9 @@ public class StompAutorizacionInterceptor implements ChannelInterceptor {
         } else if ((m = COMANDOS.matcher(destino)).matches() || (m = APP_COMANDO.matcher(destino)).matches()) {
             exigirDocente(auth);
             autorizacion.exigirAccesoASesionExistente(auth, m.group(1));
+        } else if ((m = APP_ACK.matcher(destino)).matches()) {
+            exigirDocente(auth);
+            autorizacion.exigirDocenteDeExamenExistente(auth, m.group(1));
         } else {
             throw new AccessDeniedException("Destino no permitido");
         }

@@ -26,7 +26,10 @@ public class SesionSupervision {
     @Indexed
     private String estudianteId;
     private EstadoSesion estadoSesion;
+    private java.time.LocalDateTime fechaInicio;
+    private java.time.LocalDateTime fechaFinalizacion;
     private java.time.LocalDateTime ultimoHeartbeat;
+    private Boolean cerradaPorSalaDocente = Boolean.FALSE;
     private Conexion conexion;
     private AnalisisGlobal_IA analisisGlobalIA;
     private ReporteFinal reporteFinal;

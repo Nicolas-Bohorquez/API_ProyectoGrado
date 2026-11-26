@@ -81,8 +81,9 @@ public class SupervisionController {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             //Llamamos a supervisionService y registramos la alerta
-            AlertaEvidencia alerta = sesionSupervisionService.registrarAlerta(sesionId, alertaRequest);
-            boolean receptorActivo = alerta != null && sesionSupervisionService.tieneReceptorActivoParaSesion(sesionId);
+            SesionSupervisionService.ResultadoRegistroAlerta res = sesionSupervisionService.registrarAlertaConEntrega(sesionId, alertaRequest);
+            AlertaEvidencia alerta = res.alerta();
+            boolean receptorActivo = res.docenteNotificado();
 
             //retornamos una respuesta que todo salio bien + metadatos efímeros de entrega local al docente
             return ResponseEntity.ok()
@@ -101,7 +102,11 @@ public class SupervisionController {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             boolean activo = sesionSupervisionService.tieneReceptorActivoParaSesion(sesionId);
-            return ResponseEntity.ok(java.util.Map.of("docenteReceptorActivo", activo));
+            java.util.List<String> pendientes = sesionSupervisionService.obtenerAlertasPendientesDocente(sesionId);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "docenteReceptorActivo", activo,
+                    "pendientesConfirmacion", pendientes
+            ));
         } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(404).body("Error al consultar el receptor: " + e.getMessage());
         } catch (Exception e) {
@@ -142,6 +147,30 @@ public class SupervisionController {
             return ResponseEntity.status(400).body("Error al finalizar la sesión: " + e.getMessage());
         } catch (Exception e) {
             return errorInterno("Error interno al finalizar la sesión.", e);
+        }
+    }
+
+    @PostMapping("/{sesionId}/fraude")
+    public ResponseEntity<?> marcarFraudeDocente(
+            @PathVariable String sesionId,
+            @RequestParam(required = false, defaultValue = "Fraude detectado por el docente") String motivo,
+            @RequestBody(required = false) java.util.Map<String, String> cuerpo,
+            Authentication authentication) {
+        autorizacion.exigirDocenteDeSesion(authentication, sesionId);
+        try {
+            String motivoReal = (cuerpo != null && cuerpo.get("motivo") != null && !cuerpo.get("motivo").isBlank())
+                    ? cuerpo.get("motivo")
+                    : motivo;
+            SesionSupervision anulada = sesionSupervisionService.marcarFraudeDocente(sesionId, motivoReal);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "sesionId", anulada.getSesionId(),
+                    "estadoSesion", anulada.getEstadoSesion().name(),
+                    "mensaje", "Fraude registrado y sesión anulada exitosamente"
+            ));
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Error al marcar fraude: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al marcar fraude.", e);
         }
     }
 
@@ -273,6 +302,11 @@ public class SupervisionController {
             resp.put("sesionId", sesion.getSesionId());
             resp.put("estadoSesion", sesion.getEstadoSesion());
             return ResponseEntity.ok(resp);
+        } catch (SesionSupervisionService.DispositivoNoAutorizadoException e) {
+            return ResponseEntity.status(403).body(java.util.Map.of(
+                    "codigo", "DISPOSITIVO_NO_AUTORIZADO",
+                    "mensaje", "Error en heartbeat: " + e.getMessage()
+            ));
         } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(403).body("Error en heartbeat: " + e.getMessage());
         } catch (Exception e) {

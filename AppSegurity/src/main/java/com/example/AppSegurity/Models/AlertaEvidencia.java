@@ -36,6 +36,7 @@ public class AlertaEvidencia {
     private String hashPantalla;
     private String hashAudio;
     private String idCliente;
+    private boolean entregadaDocente;
     
     
     @org.springframework.data.annotation.Transient

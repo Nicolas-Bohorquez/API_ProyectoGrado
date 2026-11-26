@@ -10,22 +10,23 @@ import java.util.Base64;
 
 /**
  * Utilidad de cifrado autenticado AES-GCM (256/128 bits) con vector de inicialización aleatorio (IV).
- * Mantiene compatibilidad hacia atrás con datos legados cifrados en modo ECB.
+ *
+ * Ya no hay llave de contingencia escrita en el código ni descifrado de respaldo en modo ECB (inseguro): un dato que no
+ * pasa la verificación GCM se rechaza. Lo único cifrado con esta clase son las claves de sesión; las que se cifraron con
+ * una AES_LLAVE anterior ya no se podían leer tras rotarla, y SesionSupervision.getClaveSesion() las trata como "sin clave".
  */
 public class AESEncryptionUtil {
 
-    private static final String LLAVE_AES_LEGADA = "ProyectoGrado123";
-    private static final String LLAVE_AES = resolverLlave();
+    // AES_LLAVE: 16, 24 o 32 BYTES (no caracteres). Sin ella el servidor no arranca. Ver SecretosServidor.
+    private static final String LLAVE_AES = SecretosServidor.resolver("AES_LLAVE",
+            s -> { int n = SecretosServidor.bytesUtf8(s); return n == 16 || n == 24 || n == 32; },
+            "exactamente 16, 24 o 32 bytes", 32);
     private static final int GCM_IV_LENGTH = 12; // 96 bits estándar NIST para GCM
     private static final int GCM_TAG_LENGTH = 128; // 128 bits de autenticación de integridad
 
-    private static String resolverLlave() {
-        String llave = System.getenv("AES_LLAVE");
-        if (llave == null || (llave.length() != 16 && llave.length() != 24 && llave.length() != 32)) {
-            System.err.println("[SEGURIDAD] AES_LLAVE no definida o longitud distinta de 16/24/32: se usa llave de contingencia.");
-            return LLAVE_AES_LEGADA;
-        }
-        return llave;
+    /** Fuerza la validación de la llave al arrancar (fail-fast) en vez de en el primer examen. */
+    public static void verificarConfiguracion() {
+        if (LLAVE_AES == null) throw new IllegalStateException("AES_LLAVE no configurada");
     }
 
     public static String encriptarDatoSensible(String dato) {
@@ -55,30 +56,21 @@ public class AESEncryptionUtil {
         try {
             byte[] decoded = Base64.getDecoder().decode(datoEncriptado);
 
-            // Intentar descifrar primero con AES-GCM (formato moderno: IV 12 bytes + Ciphertext + Tag)
-            if (decoded.length > GCM_IV_LENGTH + 16) {
-                try {
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(decoded);
-                    byte[] iv = new byte[GCM_IV_LENGTH];
-                    byteBuffer.get(iv);
-                    byte[] cipherText = new byte[byteBuffer.remaining()];
-                    byteBuffer.get(cipherText);
-
-                    SecretKeySpec secretKey = new SecretKeySpec(LLAVE_AES.getBytes(StandardCharsets.UTF_8), "AES");
-                    Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-                    cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-
-                    return new String(cipher.doFinal(cipherText), StandardCharsets.UTF_8);
-                } catch (Exception eGcm) {
-                    // Si falla GCM, cae al descifrado legado ECB
-                }
+            // Formato único AES-GCM: IV 12 bytes + Ciphertext + Tag 16 bytes
+            if (decoded.length <= GCM_IV_LENGTH + 16) {
+                throw new IllegalArgumentException("Dato cifrado demasiado corto o con formato desconocido");
             }
+            ByteBuffer byteBuffer = ByteBuffer.wrap(decoded);
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            byteBuffer.get(iv);
+            byte[] cipherText = new byte[byteBuffer.remaining()];
+            byteBuffer.get(cipherText);
 
-            // Fallback: Descifrado legado ECB para datos antiguos
-            SecretKeySpec secretKeyLegada = new SecretKeySpec(LLAVE_AES.getBytes(StandardCharsets.UTF_8), "AES");
-            Cipher cipherEcb = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            cipherEcb.init(Cipher.DECRYPT_MODE, secretKeyLegada);
-            return new String(cipherEcb.doFinal(decoded), StandardCharsets.UTF_8);
+            SecretKeySpec secretKey = new SecretKeySpec(LLAVE_AES.getBytes(StandardCharsets.UTF_8), "AES");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+
+            return new String(cipher.doFinal(cipherText), StandardCharsets.UTF_8);
 
         } catch (Exception e) {
             throw new RuntimeException("Error descifrando los datos sensibles: " + e.getMessage(), e);

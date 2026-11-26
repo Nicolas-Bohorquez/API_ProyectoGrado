@@ -14,4 +14,7 @@ public interface AlertaEvidenciaRepository extends MongoRepository<AlertaEvidenc
     List<AlertaEvidencia> findBySesionIdInOrderByHoraCapturaDesc(List<String> sesionIds);
 
     Optional<AlertaEvidencia> findFirstBySesionIdAndIdCliente(String sesionId, String idCliente);
+
+    // Conteos para el resumen del administrador (se cuentan en la base de datos, sin cargar las alertas en memoria)
+    long countByClaseAlertaIn(java.util.Collection<com.example.AppSegurity.Enums.ClaseAlerta> clases);
 }

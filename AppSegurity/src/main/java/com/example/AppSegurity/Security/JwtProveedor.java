@@ -14,26 +14,17 @@ import java.util.Date;
 @Component
 public class JwtProveedor {
 
-    //La llave se lee de la variable de entorno JWT_SECRET (mínimo 32 caracteres = 256 bits).
-    //Si no está definida se usa la llave anterior para no tumbar el despliegue, pero es INSEGURA: defina JWT_SECRET en producción.
-    private static final String JWT_SECRET_LEGADO = "EstaEsUnaLlaveSecretaSuperSeguraParaElProyectoDeGrado123456789";
-    private final String JWT_SECRET = resolverSecreto();
-
-    private static String resolverSecreto() {
-        String secreto = System.getenv("JWT_SECRET");
-        if (secreto == null || secreto.length() < 32) {
-            System.err.println("[SEGURIDAD] JWT_SECRET no definido (o menor a 32 caracteres): se usa la llave legada insegura.");
-            return JWT_SECRET_LEGADO;
-        }
-        return secreto;
-    }
+    //La llave se lee de la variable de entorno JWT_SECRET (mínimo 32 bytes = 256 bits). Sin ella el servidor no arranca
+    //(ya no hay llave de respaldo escrita en el código). Ver SecretosServidor.
+    private final String JWT_SECRET = SecretosServidor.resolver("JWT_SECRET",
+            s -> SecretosServidor.bytesUtf8(s) >= 32, "mínimo 32 bytes", 64);
     
     //Tiempo de vida del Access Token: 15 minutos (en milisegundos)
     private final long ACCESS_TOKEN_EXPIRATION = 15 * 60 * 1000;
 
     //Generamos la llave encriptada a partir de nuestro texto secreto
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
+        return Keys.hmacShaKeyFor(JWT_SECRET.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     //1. Fabricamos el toke y Se llama cuando el usuario se loguea exitosamente

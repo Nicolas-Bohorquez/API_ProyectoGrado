@@ -118,6 +118,17 @@
 				</configuration>
 			</plugin>
 			<plugin>
+				<!-- Las pruebas usan llaves JWT/AES aleatorias por ejecución (ver Security/SecretosServidor): en producción
+				     el servidor no arranca sin JWT_SECRET y AES_LLAVE válidas. -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<app.llaves.desarrollo>true</app.llaves.desarrollo>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<executions>

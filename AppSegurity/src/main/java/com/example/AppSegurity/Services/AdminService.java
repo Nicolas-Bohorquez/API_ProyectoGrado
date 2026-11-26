@@ -44,6 +44,14 @@ public class AdminService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
+
+    /** Campo de hash presente y con contenido (no nulo, no vacío, no solo espacios). */
+    private static org.springframework.data.mongodb.core.query.Criteria conHash(String campo) {
+        return org.springframework.data.mongodb.core.query.Criteria.where(campo).regex("\\S");
+    }
+
     public Map<String, Object> obtenerResumen() {
         Map<String, Object> resumen = new HashMap<>();
         long totalProfes = profesorRepository.count();
@@ -54,31 +62,21 @@ public class AdminService {
         long estudiantesActivos = estudianteRepository.countByEstadoUsuario(EstadoUsuario.ACTIVO);
 
         long totalSesiones = sesionSupervisionRepository.count();
-        List<com.example.AppSegurity.Models.AlertaEvidencia> todasAlertas = alertaEvidenciaRepository.findAll();
-        long totalAlertas = todasAlertas.size();
-        long alertasVision = 0;
-        long alertasAudio = 0;
-        long alertasProcesos = 0;
-        long alertasTeclado = 0;
-        long alertasConHash = 0;
-        for (com.example.AppSegurity.Models.AlertaEvidencia a : todasAlertas) {
-            if (a.getClaseAlerta() != null) {
-                switch (a.getClaseAlerta()) {
-                    case VISION, OBJETO, CAMARA_OBSTRUIDA -> alertasVision++;
-                    case AUDIO -> alertasAudio++;
-                    case TECLADO -> alertasTeclado++;
-                    default -> alertasProcesos++;
-                }
-            } else {
-                alertasProcesos++;
-            }
-            boolean tieneHash = (a.getHashWebcam() != null && !a.getHashWebcam().isBlank())
-                    || (a.getHashPantalla() != null && !a.getHashPantalla().isBlank())
-                    || (a.getHashAudio() != null && !a.getHashAudio().isBlank());
-            if (tieneHash) {
-                alertasConHash++;
-            }
-        }
+        // Se cuenta en la base de datos: antes se cargaban TODAS las alertas en memoria (con muchas alertas, el servidor
+        // podía quedarse sin RAM). Mismas reglas que antes: visión = VISION/OBJETO/CAMARA_OBSTRUIDA, el resto (incluidas
+        // las que no tienen clase) cuenta como procesos.
+        long totalAlertas = alertaEvidenciaRepository.count();
+        long alertasVision = alertaEvidenciaRepository.countByClaseAlertaIn(java.util.List.of(
+                com.example.AppSegurity.Enums.ClaseAlerta.VISION,
+                com.example.AppSegurity.Enums.ClaseAlerta.OBJETO,
+                com.example.AppSegurity.Enums.ClaseAlerta.CAMARA_OBSTRUIDA));
+        long alertasAudio = alertaEvidenciaRepository.countByClaseAlertaIn(java.util.List.of(com.example.AppSegurity.Enums.ClaseAlerta.AUDIO));
+        long alertasTeclado = alertaEvidenciaRepository.countByClaseAlertaIn(java.util.List.of(com.example.AppSegurity.Enums.ClaseAlerta.TECLADO));
+        long alertasProcesos = Math.max(0, totalAlertas - alertasVision - alertasAudio - alertasTeclado);
+        long alertasConHash = mongoTemplate.count(new org.springframework.data.mongodb.core.query.Query(
+                new org.springframework.data.mongodb.core.query.Criteria().orOperator(
+                        conHash("hashWebcam"), conHash("hashPantalla"), conHash("hashAudio"))),
+                com.example.AppSegurity.Models.AlertaEvidencia.class);
 
         resumen.put("totalProfesores", totalProfes);
         resumen.put("totalEstudiantes", totalEstudiantes);

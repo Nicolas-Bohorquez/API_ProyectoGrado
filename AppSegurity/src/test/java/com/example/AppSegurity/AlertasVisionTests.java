@@ -202,7 +202,11 @@ class AlertasVisionTests {
 		assertFalse(json.contains("0.99"));
 	}
 
+	/** La alerta la envía el ESTUDIANTE dueño (un docente ya no puede inyectar alertas); el docente solo la lee. */
 	private void enviarComoDocente(String json) throws Exception {
-		assertEquals(200, enviar(json));
+		int estado = mvc.perform(post("/api/supervision/" + SESION + "/alerta").contentType("application/json").content(json)
+				.with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user(CORREO).roles("ESTUDIANTE")))
+				.andReturn().getResponse().getStatus();
+		assertEquals(200, estado);
 	}
 }

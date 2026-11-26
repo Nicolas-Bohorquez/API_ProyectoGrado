@@ -292,7 +292,9 @@ public class AutenticacionService {
         nuevo.setCedula(cedulaLimpia);
         nuevo.setEmailInstitucional(email);
         nuevo.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        nuevo.setEstado(EstadoUsuario.ACTIVO);
+        // Queda INACTIVO hasta que el administrador lo apruebe (panel de administración -> "Aprobar cuenta"). Antes
+        // cualquier correo institucional (incluido el de un estudiante) se creaba como docente ACTIVO sin aprobación.
+        nuevo.setEstado(EstadoUsuario.INACTIVO);
         nuevo.setRol("PROFESOR");
         nuevo.setMaterias(new java.util.ArrayList<>());
 
@@ -302,7 +304,7 @@ public class AutenticacionService {
 
         profesorRepository.save(nuevo);
         cacheOtp.remove(email);
-        System.out.println("[REGISTRO EXITOSO] Docente creado: " + email + " (" + nuevo.getCodigoProfesor() + ")");
+        System.out.println("[REGISTRO EXITOSO] Docente creado (pendiente de aprobación): " + email + " (" + nuevo.getCodigoProfesor() + ")");
     }
 
     public void solicitarCodigoRecuperacion(RecuperarSolicitudRequest req) {
@@ -513,8 +515,24 @@ public class AutenticacionService {
         return token;
     }
 
+    /** Docente con la contraseña correcta pero cuenta aún no aprobada: se le explica en vez de "credenciales incorrectas". */
+    public static class CuentaPendienteAprobacionException extends RuntimeException {
+        public CuentaPendienteAprobacionException(String mensaje) { super(mensaje); }
+    }
+
     private String loginProfesorInterno(String email, String passwordTextoPlano) {
-        //
+        // Cuenta pendiente de aprobación: solo se revela si la contraseña es correcta (no permite averiguar qué
+        // correos existen) y no cuenta como intento fallido.
+        profesorRepository.findByEmailInstitucional(email)
+                .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(email))
+                .filter(p -> p.getEstado() == EstadoUsuario.INACTIVO)
+                .filter(p -> p.getPasswordHash() != null && passwordTextoPlano != null
+                        && passwordEncoder.matches(passwordTextoPlano, p.getPasswordHash()))
+                .ifPresent(p -> {
+                    throw new CuentaPendienteAprobacionException(
+                            "Tu cuenta de docente está pendiente de aprobación por el administrador. Podrás ingresar cuando la active.");
+                });
+
         Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, passwordTextoPlano));
 
         //Buscamos al profesor por su email en la base de datos 

@@ -141,6 +141,21 @@ public class AutorizacionService {
     }
 
     /**
+     * Acciones que solo hace la app del estudiante (enviar alertas, heartbeat, interrumpir, retransmitir): exige que el
+     * usuario sea ESTUDIANTE y dueño de la sesión. Ni docentes ni administradores pueden inyectar datos en una sesión.
+     * Si la sesión no existe no rechaza (el servicio responderá que no existe), pero el rol se exige siempre.
+     */
+    public void exigirEstudianteDeSesion(Authentication a, String sesionId) {
+        if (!esEstudiante(a)) {
+            throw denegado("Solo el estudiante dueño de la sesión puede realizar esta acción");
+        }
+        if (sesionId == null) return;
+        Optional<SesionSupervision> sesion = sesionSupervisionRepository.findById(sesionId);
+        if (sesion.isEmpty()) return;
+        exigirAccesoASesion(a, sesion.get());
+    }
+
+    /**
      * Exige que el usuario autenticado sea el docente titular del examen al que pertenece la sesión (o administrador).
      * A diferencia de exigirAccesoASesion, rechaza explícitamente a cualquier estudiante aunque sea el dueño de la sesión.
      */

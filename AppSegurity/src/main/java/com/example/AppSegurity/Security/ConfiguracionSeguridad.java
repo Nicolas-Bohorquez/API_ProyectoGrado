@@ -41,14 +41,16 @@ public class ConfiguracionSeguridad {
                 .requestMatchers("/api/profesor/**").hasAnyRole("PROFESOR", "SUPERADMIN")
                 //Solo para los estudiantes
                 .requestMatchers("/api/estudiante/**").hasRole("ESTUDIANTE")
-                // Rutas que usa la app del estudiante durante el examen (cualquier usuario autenticado)
-                .requestMatchers(HttpMethod.POST, "/api/supervision/iniciar").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta").authenticated()
+                // Rutas que SOLO usa la app del estudiante durante el examen (iniciar, alertas, heartbeat, interrumpir):
+                // un docente o admin no puede iniciar exámenes ajenos ni inyectar datos en una sesión
+                .requestMatchers(HttpMethod.POST, "/api/supervision/iniciar").hasRole("ESTUDIANTE")
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta").hasRole("ESTUDIANTE")
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta/*/retransmitir").hasRole("ESTUDIANTE")
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/heartbeat").hasRole("ESTUDIANTE")
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/interrumpir").hasRole("ESTUDIANTE")
+                // Rutas del examen que también puede consultar el docente dueño (la propiedad se valida en el controlador)
                 .requestMatchers(HttpMethod.GET, "/api/supervision/*/receptor-activo").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta/*/retransmitir").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/supervision/*/finalizar").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/supervision/*/heartbeat").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/supervision/*/interrumpir").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/supervision/reglas/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/apelaciones/*/solicitar").authenticated()
                 // El resto de supervisión, exámenes y apelaciones es solo del personal docente

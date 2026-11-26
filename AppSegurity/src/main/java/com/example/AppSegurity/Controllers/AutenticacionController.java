@@ -94,6 +94,8 @@ public class AutenticacionController {
             return ResponseEntity.ok(response);
         } catch (com.example.AppSegurity.Security.IntentosExcedidosException e) {
             return ResponseEntity.status(429).body("Error de autenticación: " + e.getMessage());
+        } catch (AutenticacionService.CuentaPendienteAprobacionException e) {
+            return ResponseEntity.status(403).body(Map.of("exito", false, "mensaje", e.getMessage()));
         } catch (Exception e) {
             return loginRechazado(e);
         }

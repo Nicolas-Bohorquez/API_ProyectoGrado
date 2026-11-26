@@ -47,17 +47,19 @@ public class SupervisionController {
 
     @PostMapping("/iniciar")
     public ResponseEntity<?> iniciarSesionSupervision(@jakarta.validation.Valid @RequestBody IniciarSesionRequest peticion, Authentication authentication) {
-        // La identidad sale del TOKEN, no del cuerpo: un estudiante solo puede iniciar sesión como él mismo
-        String estudianteIdSeguro = peticion.getEstudianteId();
-        if (AutorizacionService.esEstudiante(authentication)) {
-            com.example.AppSegurity.Models.Estudiante yo = autorizacion.estudianteActual(authentication)
-                    .orElseThrow(() -> new AccessDeniedException("No se encontró al estudiante del token"));
-            String enviado = peticion.getEstudianteId();
-            if (enviado != null && !enviado.equalsIgnoreCase(yo.getEstudianteId()) && !enviado.equalsIgnoreCase(yo.getEmail())) {
-                throw new AccessDeniedException("No puede iniciar una sesión a nombre de otro estudiante");
-            }
-            estudianteIdSeguro = yo.getEstudianteId();
+        // Solo un ESTUDIANTE inicia su propio examen. Antes un docente (o admin) podía iniciarlo a nombre de cualquier
+        // alumno, recibir su clave de sesión y dejar al alumno real bloqueado por dispositivo.
+        if (!AutorizacionService.esEstudiante(authentication)) {
+            throw new AccessDeniedException("Solo un estudiante puede iniciar su propio examen");
         }
+        // La identidad sale del TOKEN, no del cuerpo: un estudiante solo puede iniciar sesión como él mismo
+        com.example.AppSegurity.Models.Estudiante yo = autorizacion.estudianteActual(authentication)
+                .orElseThrow(() -> new AccessDeniedException("No se encontró al estudiante del token"));
+        String enviado = peticion.getEstudianteId();
+        if (enviado != null && !enviado.equalsIgnoreCase(yo.getEstudianteId()) && !enviado.equalsIgnoreCase(yo.getEmail())) {
+            throw new AccessDeniedException("No puede iniciar una sesión a nombre de otro estudiante");
+        }
+        String estudianteIdSeguro = yo.getEstudianteId();
         try {
             //Iniciamos una sesion de supervision par el estudiante
             SesionSupervision sesionSupervision = sesionSupervisionService.iniciarSesion(estudianteIdSeguro, peticion.getPinExamen(), peticion.getConexion());
@@ -78,7 +80,7 @@ public class SupervisionController {
     //Metodos POST
     @PostMapping("/{sesionId}/alerta")
     public ResponseEntity<?> registrarAlerta(@PathVariable String sesionId, @jakarta.validation.Valid @RequestBody NuevaAlertaRequest alertaRequest, Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirEstudianteDeSesion(authentication, sesionId);
         try {
             //Llamamos a supervisionService y registramos la alerta
             SesionSupervisionService.ResultadoRegistroAlerta res = sesionSupervisionService.registrarAlertaConEntrega(sesionId, alertaRequest);
@@ -120,7 +122,7 @@ public class SupervisionController {
             @PathVariable String alertaId,
             @RequestBody RetransmitirEvidenciaRequest req,
             Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirEstudianteDeSesion(authentication, sesionId);
         try {
             boolean entregada = sesionSupervisionService.retransmitirEvidencia(sesionId, alertaId, req);
             return ResponseEntity.ok()
@@ -295,7 +297,7 @@ public class SupervisionController {
 
     @PostMapping("/{sesionId}/heartbeat")
     public ResponseEntity<?> registrarHeartbeat(@PathVariable String sesionId, @RequestParam(required = false) String deviceId, Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirEstudianteDeSesion(authentication, sesionId);
         try {
             SesionSupervision sesion = sesionSupervisionService.registrarHeartbeat(sesionId, deviceId);
             java.util.Map<String, Object> resp = new java.util.HashMap<>();
@@ -316,7 +318,7 @@ public class SupervisionController {
 
     @PostMapping("/{sesionId}/interrumpir")
     public ResponseEntity<?> interrumpirSesion(@PathVariable String sesionId, @RequestParam(required = false, defaultValue = "App cerrada abruptamente") String motivo, Authentication authentication) {
-        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        autorizacion.exigirEstudianteDeSesion(authentication, sesionId);
         try {
             sesionSupervisionService.marcarSesionInterrumpida(sesionId, motivo);
             return ResponseEntity.ok("Sesión marcada como interrumpida");

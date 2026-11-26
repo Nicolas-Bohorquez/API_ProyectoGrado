@@ -676,8 +676,15 @@ public class SesionSupervisionService {
         SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("Error al encontrar la sesión"));
         EstadoSesion estado = sesion.getEstadoSesion();
-        if (estado == EstadoSesion.FINALIZADA || estado == EstadoSesion.APELACION_CURSO) {
-            throw new ErrorNegocioException("La sesión ya finalizó o está en apelación");
+        // Un examen FINALIZADO también puede anularse (el docente revisa la evidencia después; antes bastaba con pulsar
+        // "Terminar examen" para quedar protegido). Solo se bloquea mientras hay apelación en curso o si una apelación
+        // ya se resolvió a favor del estudiante.
+        if (estado == EstadoSesion.APELACION_CURSO) {
+            throw new ErrorNegocioException("La sesión está en apelación");
+        }
+        if (estado == EstadoSesion.FINALIZADA && sesion.getApelacion() != null
+                && sesion.getApelacion().getEstadoApelacion() == com.example.AppSegurity.Enums.EstadoApelacion.APROBADA_A_FAVOR) {
+            throw new ErrorNegocioException("Una apelación ya resolvió esta sesión a favor del estudiante");
         }
         String motivoLimpio = (motivo == null || motivo.isBlank())
                 ? "Fraude marcado por el docente"

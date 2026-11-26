@@ -1,6 +1,8 @@
 package com.example.AppSegurity.Config;
 
 import java.security.Principal;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +33,9 @@ import com.example.AppSegurity.Security.AutorizacionService;
  *   SEND      /topic/comandos/{sesion}  solo el docente dueño del examen (o administrador)
  *   SEND      /app/comando/{sesion}     solo el docente dueño del examen (o administrador)
  *
- * Todo lo demás se rechaza. Los mensajes que publica el servidor (alertas en vivo) no pasan por aquí.
+ * Para evitar consultas repetidas a MongoDB en tráfico continuo (fotogramas de video y voz), las autorizaciones de
+ * publicación en /topic/stream/* y /topic/voz/* se cachean brevemente en RAM por sesión WebSocket y se invalidan al
+ * desconectar o cerrar la sesión de examen. Todo lo demás se verifica siempre contra base de datos.
  */
 @Component
 public class StompAutorizacionInterceptor implements ChannelInterceptor {
@@ -39,10 +43,67 @@ public class StompAutorizacionInterceptor implements ChannelInterceptor {
     private static final Pattern ALERTAS = Pattern.compile("^/topic/alertas/([^/]+)$");
     private static final Pattern STREAM = Pattern.compile("^/topic/stream/([^/]+)$");
     private static final Pattern COMANDOS = Pattern.compile("^/topic/comandos/([^/]+)$");
+    private static final Pattern VOZ = Pattern.compile("^/topic/voz/([^/]+)$");
     private static final Pattern APP_COMANDO = Pattern.compile("^/app/comando/([^/]+)$");
+
+    static final long CACHE_SEND_TTL_MS = 20_000L;
+    private static final int MAX_ENTRADAS_CACHE = 4096;
+
+    private record ClaveCacheSend(String wsSessionId, String usuario, String rol, String destino, String sesionId) {}
+
+    private final Map<ClaveCacheSend, Long> cacheSendMedia = new ConcurrentHashMap<>();
 
     @Autowired
     private AutorizacionService autorizacion;
+
+    public void invalidarWsSession(String wsSessionId) {
+        if (wsSessionId == null || wsSessionId.isBlank()) {
+            return;
+        }
+        cacheSendMedia.keySet().removeIf(k -> wsSessionId.equals(k.wsSessionId()));
+    }
+
+    public void invalidarSesion(String sesionId) {
+        if (sesionId == null || sesionId.isBlank()) {
+            return;
+        }
+        cacheSendMedia.keySet().removeIf(k -> sesionId.equals(k.sesionId()));
+    }
+
+    private static String rolPrincipal(Authentication auth) {
+        if (AutorizacionService.esAdmin(auth)) {
+            return "A";
+        }
+        if (AutorizacionService.esProfesor(auth)) {
+            return "P";
+        }
+        if (AutorizacionService.esEstudiante(auth)) {
+            return "E";
+        }
+        return "U";
+    }
+
+    private boolean estaCacheado(ClaveCacheSend clave, long ahoraMs) {
+        Long expiraEn = cacheSendMedia.get(clave);
+        if (expiraEn == null) {
+            return false;
+        }
+        if (ahoraMs < expiraEn) {
+            return true;
+        }
+        cacheSendMedia.remove(clave, expiraEn);
+        return false;
+    }
+
+    private void registrarEnCache(ClaveCacheSend clave, long ahoraMs) {
+        if (cacheSendMedia.size() >= MAX_ENTRADAS_CACHE) {
+            cacheSendMedia.entrySet().removeIf(e -> ahoraMs >= e.getValue());
+            if (cacheSendMedia.size() >= MAX_ENTRADAS_CACHE) {
+                cacheSendMedia.clear();
+            }
+        }
+        cacheSendMedia.put(clave, ahoraMs + CACHE_SEND_TTL_MS);
+    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -67,11 +128,12 @@ public class StompAutorizacionInterceptor implements ChannelInterceptor {
         }
         Authentication auth = (Authentication) usuario;
         String destino = acc.getDestination() == null ? "" : acc.getDestination();
+        String wsSessionId = acc.getSessionId() != null ? acc.getSessionId() : "";
         try {
             if (StompCommand.SUBSCRIBE.equals(comando)) {
                 autorizarSuscripcion(auth, destino);
             } else {
-                autorizarPublicacion(auth, destino);
+                autorizarPublicacion(auth, wsSessionId, destino);
             }
         } catch (AccessDeniedException e) {
             throw new MessagingException("Operación no permitida sobre " + destino);
@@ -87,20 +149,41 @@ public class StompAutorizacionInterceptor implements ChannelInterceptor {
         } else if ((m = STREAM.matcher(destino)).matches()) {
             exigirDocente(auth);
             autorizacion.exigirAccesoASesionExistente(auth, m.group(1));
-        } else if ((m = COMANDOS.matcher(destino)).matches()) {
+        } else if ((m = COMANDOS.matcher(destino)).matches() || (m = VOZ.matcher(destino)).matches()) {
             autorizacion.exigirAccesoASesionExistente(auth, m.group(1));
         } else {
             throw new AccessDeniedException("Destino no permitido");
         }
     }
 
-    private void autorizarPublicacion(Authentication auth, String destino) {
+    private void autorizarPublicacion(Authentication auth, String wsSessionId, String destino) {
         Matcher m;
         if ((m = STREAM.matcher(destino)).matches()) {
+            String sesionId = m.group(1);
             if (!AutorizacionService.esEstudiante(auth)) {
                 throw new AccessDeniedException("Solo el estudiante publica su video");
             }
-            autorizacion.exigirAccesoASesionExistente(auth, m.group(1));
+            ClaveCacheSend clave = new ClaveCacheSend(wsSessionId, String.valueOf(auth.getName()), rolPrincipal(auth), destino, sesionId);
+            long ahora = System.currentTimeMillis();
+            if (!wsSessionId.isEmpty() && estaCacheado(clave, ahora)) {
+                return;
+            }
+            autorizacion.exigirAccesoASesionExistente(auth, sesionId);
+            if (!wsSessionId.isEmpty()) {
+                registrarEnCache(clave, ahora);
+            }
+        } else if ((m = VOZ.matcher(destino)).matches()) {
+            String sesionId = m.group(1);
+            exigirDocente(auth);
+            ClaveCacheSend clave = new ClaveCacheSend(wsSessionId, String.valueOf(auth.getName()), rolPrincipal(auth), destino, sesionId);
+            long ahora = System.currentTimeMillis();
+            if (!wsSessionId.isEmpty() && estaCacheado(clave, ahora)) {
+                return;
+            }
+            autorizacion.exigirAccesoASesionExistente(auth, sesionId);
+            if (!wsSessionId.isEmpty()) {
+                registrarEnCache(clave, ahora);
+            }
         } else if ((m = COMANDOS.matcher(destino)).matches() || (m = APP_COMANDO.matcher(destino)).matches()) {
             exigirDocente(auth);
             autorizacion.exigirAccesoASesionExistente(auth, m.group(1));

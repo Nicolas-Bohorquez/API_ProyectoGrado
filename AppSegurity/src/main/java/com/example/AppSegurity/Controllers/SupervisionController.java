@@ -2,6 +2,7 @@ package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.DTO.IniciarSesionRequest;
 import com.example.AppSegurity.DTO.NuevaAlertaRequest;
+import com.example.AppSegurity.DTO.RetransmitirEvidenciaRequest;
 import com.example.AppSegurity.Models.AlertaEvidencia;
 import com.example.AppSegurity.Models.SesionSupervision;
 import com.example.AppSegurity.Security.AutorizacionService;
@@ -45,7 +46,7 @@ public class SupervisionController {
     }
 
     @PostMapping("/iniciar")
-    public ResponseEntity<?> iniciarSesionSupervision(@RequestBody IniciarSesionRequest peticion, Authentication authentication) {
+    public ResponseEntity<?> iniciarSesionSupervision(@jakarta.validation.Valid @RequestBody IniciarSesionRequest peticion, Authentication authentication) {
         // La identidad sale del TOKEN, no del cuerpo: un estudiante solo puede iniciar sesión como él mismo
         String estudianteIdSeguro = peticion.getEstudianteId();
         if (AutorizacionService.esEstudiante(authentication)) {
@@ -80,14 +81,50 @@ public class SupervisionController {
         autorizacion.exigirAccesoASesion(authentication, sesionId);
         try {
             //Llamamos a supervisionService y registramos la alerta
-            sesionSupervisionService.registrarAlerta(sesionId, alertaRequest);
+            AlertaEvidencia alerta = sesionSupervisionService.registrarAlerta(sesionId, alertaRequest);
+            boolean receptorActivo = alerta != null && sesionSupervisionService.tieneReceptorActivoParaSesion(sesionId);
 
-            //retornamos una respuesta que todo salio bien
-            return ResponseEntity.ok("Alerta guardada exitosamente");
+            //retornamos una respuesta que todo salio bien + metadatos efímeros de entrega local al docente
+            return ResponseEntity.ok()
+                    .header("X-Alerta-Id", alerta != null && alerta.getIdAlerta() != null ? alerta.getIdAlerta() : "")
+                    .header("X-Docente-Receptor", receptorActivo ? "1" : "0")
+                    .body("Alerta guardada exitosamente");
         } catch (ErrorNegocioException | IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error al registrar la alerta: " + e.getMessage());
         } catch (Exception e) {
             return errorInterno("Error interno al registrar la alerta.", e);
+        }
+    }
+
+    @GetMapping("/{sesionId}/receptor-activo")
+    public ResponseEntity<?> receptorActivo(@PathVariable String sesionId, Authentication authentication) {
+        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        try {
+            boolean activo = sesionSupervisionService.tieneReceptorActivoParaSesion(sesionId);
+            return ResponseEntity.ok(java.util.Map.of("docenteReceptorActivo", activo));
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
+            return ResponseEntity.status(404).body("Error al consultar el receptor: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al consultar el receptor activo.", e);
+        }
+    }
+
+    @PostMapping("/{sesionId}/alerta/{alertaId}/retransmitir")
+    public ResponseEntity<?> retransmitirEvidencia(
+            @PathVariable String sesionId,
+            @PathVariable String alertaId,
+            @RequestBody RetransmitirEvidenciaRequest req,
+            Authentication authentication) {
+        autorizacion.exigirAccesoASesion(authentication, sesionId);
+        try {
+            boolean entregada = sesionSupervisionService.retransmitirEvidencia(sesionId, alertaId, req);
+            return ResponseEntity.ok()
+                    .header("X-Docente-Receptor", entregada ? "1" : "0")
+                    .body(java.util.Map.of("entregada", entregada, "docenteReceptorActivo", entregada));
+        } catch (ErrorNegocioException | IllegalArgumentException e) {
+            return ResponseEntity.status(400).body("Error al retransmitir la evidencia: " + e.getMessage());
+        } catch (Exception e) {
+            return errorInterno("Error interno al retransmitir la evidencia.", e);
         }
     }
 

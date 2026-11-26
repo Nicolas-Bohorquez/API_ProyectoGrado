@@ -14,6 +14,8 @@ public interface ExamenRepository extends MongoRepository<Examen, String>{
     //Traer el pin del examen
     Optional<Examen> findByControlAccesoPinSesion(String piSesion);
 
+    Optional<Examen> findFirstByControlAccesoPinSesion(String pinSesion);
+
     // Solo exámenes activos cuya horaFin ya venció (evita findAll() en el cron)
     List<Examen> findByControlAccesoEstadoPinAndFechaExamenHoraFinBefore(Estado_pin estadoPin, LocalDateTime ahora);
 }

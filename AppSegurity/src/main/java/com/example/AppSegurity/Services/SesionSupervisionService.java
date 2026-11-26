@@ -1,6 +1,9 @@
 package com.example.AppSegurity.Services;
 
+import com.example.AppSegurity.Config.RegistroSuscripcionesAlertas;
+import com.example.AppSegurity.Config.StompAutorizacionInterceptor;
 import com.example.AppSegurity.DTO.NuevaAlertaRequest;
+import com.example.AppSegurity.DTO.RetransmitirEvidenciaRequest;
 import com.example.AppSegurity.Enums.ClaseAlerta;
 import com.example.AppSegurity.Enums.EstadoSesion;
 import com.example.AppSegurity.Enums.NivelRiesgo;
@@ -43,6 +46,26 @@ public class SesionSupervisionService {
     private SimpMessagingTemplate webSocketMessagingTemplate;
     @Autowired
     private LimitadorIntentos limitadorPin;
+    @Autowired
+    private RegistroSuscripcionesAlertas registroSuscripcionesAlertas;
+    @Autowired(required = false)
+    private StompAutorizacionInterceptor stompAutorizacionInterceptor;
+
+    private final Object[] locksInicioSesion = crearCandados(64);
+    private final Object[] locksAlertaSesion = crearCandados(64);
+
+    private static Object[] crearCandados(int n) {
+        Object[] arr = new Object[n];
+        for (int i = 0; i < n; i++) {
+            arr[i] = new Object();
+        }
+        return arr;
+    }
+
+    private static Object candadoDe(Object[] tabla, String clave) {
+        int idx = (clave == null ? 0 : clave.hashCode()) & (tabla.length - 1);
+        return tabla[idx];
+    }
 
     /**
      * Antes no había ningún freno aquí: a diferencia del login, el OTP o el cambio de clave, un estudiante autenticado
@@ -54,7 +77,7 @@ public class SesionSupervisionService {
         String clavePin = "pin:" + (idEstudiante == null ? "" : idEstudiante.trim().toLowerCase());
         limitadorPin.verificar(clavePin);
 
-        Examen examen = examenRepository.findByControlAccesoPinSesion(pinExamen).orElse(null);
+        Examen examen = examenRepository.findFirstByControlAccesoPinSesion(pinExamen).orElse(null);
         if (examen == null) {
             limitadorPin.registrarFallo(clavePin);
             throw new ErrorNegocioException("El PIN ingresado no existe o es incorrecto");
@@ -121,121 +144,131 @@ public class SesionSupervisionService {
             throw new ErrorNegocioException("Acceso denegado: El sistema de supervisión actualmente solo es compatible con Windows.");
         }
 
-        // Revisar si ya tiene una sesión iniciada para no duplicar tarjetas en el panel del profesor
-        List<SesionSupervision> sesionesPrevias = sesionSupervisionRepository.findByExamenId(examen.getCodigoExamen());
-        int intentosCompletados = 0;
-        boolean accesoBloqueado = false;
-        String motivoBloqueo = "";
-        
-        for (SesionSupervision s : sesionesPrevias) {
-            if (s.getEstudianteId() != null && s.getEstudianteId().equals(estudiante.getEstudianteId())) {
-                if (s.getEstadoSesion() == EstadoSesion.INICIADA || s.getEstadoSesion() == EstadoSesion.INTERRUMPIDA) {
-                    String devExistente = (s.getConexion() != null) ? s.getConexion().getDeviceId() : null;
-                    String devEntrante = (conexionInfo != null) ? conexionInfo.getDeviceId() : null;
+        // Serializa peticiones /iniciar simultáneas del mismo estudiante en el mismo examen (evita doble sesión activa)
+        synchronized (candadoDe(locksInicioSesion, examen.getCodigoExamen() + ":" + estudiante.getEstudianteId())) {
+            // Revisar si ya tiene una sesión iniciada para no duplicar tarjetas en el panel del profesor
+            List<SesionSupervision> sesionesPrevias = sesionSupervisionRepository.findByExamenId(examen.getCodigoExamen());
+            int intentosCompletados = 0;
+            boolean accesoBloqueado = false;
+            String motivoBloqueo = "";
+            
+            for (SesionSupervision s : sesionesPrevias) {
+                if (s.getEstudianteId() != null && s.getEstudianteId().equals(estudiante.getEstudianteId())) {
+                    if (s.getEstadoSesion() == EstadoSesion.INICIADA || s.getEstadoSesion() == EstadoSesion.INTERRUMPIDA) {
+                        String devExistente = (s.getConexion() != null) ? s.getConexion().getDeviceId() : null;
+                        String devEntrante = (conexionInfo != null) ? conexionInfo.getDeviceId() : null;
+                        boolean tieneDevExistente = devExistente != null && !devExistente.isBlank();
+                        boolean faltaDevEntrante = devEntrante == null || devEntrante.isBlank();
 
-                    // Si ambos tienen deviceId y NO coinciden -> Intento de sesión simultánea en segundo equipo
-                    if (devExistente != null && devEntrante != null && !devExistente.equalsIgnoreCase(devEntrante)) {
-                        AlertaProceso alertaDup = new AlertaProceso(
-                            0,
-                            "INTENTO_SESION_DUPLICADA",
-                            com.example.AppSegurity.Enums.CategoriaProceso.CONTROL_REMOTO,
-                            com.example.AppSegurity.Enums.AccionTomada.BLOQUEADO,
-                            null
-                        );
-                        alertaDup.setSesionId(s.getSesionId());
-                        alertaDup.setClaseAlerta(ClaseAlerta.SESION_DUPLICADA);
-                        alertaDup.setNivelRiesgo(NivelRiesgo.CRITICO);
-                        alertaDup.setHoraCaptura(LocalDateTime.now());
-                        alertaDup.setNombreEstudiante(estudiante.getNombre() + " " + estudiante.getApellidos());
-                        alertaEvidenciaRepository.save(alertaDup);
+                        // Si la sesión ya pertenece a un dispositivo identificado y el entrante no coincide o omite deviceId -> bloquear
+                        if (tieneDevExistente && (faltaDevEntrante || !devExistente.equalsIgnoreCase(devEntrante))) {
+                            AlertaProceso alertaDup = new AlertaProceso(
+                                0,
+                                "INTENTO_SESION_DUPLICADA",
+                                com.example.AppSegurity.Enums.CategoriaProceso.CONTROL_REMOTO,
+                                com.example.AppSegurity.Enums.AccionTomada.BLOQUEADO,
+                                null
+                            );
+                            alertaDup.setSesionId(s.getSesionId());
+                            alertaDup.setClaseAlerta(ClaseAlerta.SESION_DUPLICADA);
+                            alertaDup.setNivelRiesgo(NivelRiesgo.CRITICO);
+                            alertaDup.setHoraCaptura(LocalDateTime.now());
+                            alertaDup.setNombreEstudiante(estudiante.getNombre() + " " + estudiante.getApellidos());
+                            alertaEvidenciaRepository.save(alertaDup);
+
+                            try {
+                                java.util.Map<String, Object> evDup = new java.util.HashMap<>();
+                                evDup.put("tipoEvento", "SESION_DUPLICADA_BLOQUEADA");
+                                evDup.put("sesionId", s.getSesionId());
+                                evDup.put("estudianteId", s.getEstudianteId());
+                                evDup.put("nombreEstudiante", estudiante.getNombre() + " " + estudiante.getApellidos());
+                                evDup.put("ipIntruso", conexionInfo != null ? conexionInfo.getIpEstudiante() : "Desconocida");
+                                evDup.put("macIntruso", conexionInfo != null ? conexionInfo.getDireccionMac() : "Desconocida");
+                                evDup.put("mensaje", "Intento de inicio de sesión simultáneo en otro dispositivo bloqueado.");
+                                webSocketMessagingTemplate.convertAndSend((String) ("/topic/alertas/" + s.getExamenId()), (Object) evDup);
+                            } catch (Exception ignored) {}
+
+                            throw new ErrorNegocioException("Acceso denegado: Ya existe una sesión activa para este examen en otro equipo. Por motivos de integridad académica no se permite el acceso simultáneo desde múltiples dispositivos.");
+                        }
+
+                        // Mismo dispositivo: reconexión autorizada
+                        s.setEstadoSesion(EstadoSesion.INICIADA);
+                        s.setUltimoHeartbeat(LocalDateTime.now());
+                        if (conexionInfo != null) {
+                            s.setConexion(conexionInfo);
+                        }
+                        s.asegurarClaveSesion();            // una sesión anterior a este cambio recibe su clave al reanudarse
+                        sesionSupervisionRepository.save(s);
 
                         try {
-                            java.util.Map<String, Object> evDup = new java.util.HashMap<>();
-                            evDup.put("tipoEvento", "SESION_DUPLICADA_BLOQUEADA");
-                            evDup.put("sesionId", s.getSesionId());
-                            evDup.put("estudianteId", s.getEstudianteId());
-                            evDup.put("nombreEstudiante", estudiante.getNombre() + " " + estudiante.getApellidos());
-                            evDup.put("ipIntruso", conexionInfo != null ? conexionInfo.getIpEstudiante() : "Desconocida");
-                            evDup.put("macIntruso", conexionInfo != null ? conexionInfo.getDireccionMac() : "Desconocida");
-                            evDup.put("mensaje", "Intento de inicio de sesión simultáneo en otro dispositivo bloqueado.");
-                            webSocketMessagingTemplate.convertAndSend((String) ("/topic/alertas/" + s.getExamenId()), (Object) evDup);
-                        } catch (Exception ignored) {}
-
-                        throw new ErrorNegocioException("Acceso denegado: Ya existe una sesión activa para este examen en otro equipo. Por motivos de integridad académica no se permite el acceso simultáneo desde múltiples dispositivos.");
-                    }
-
-                    // Mismo dispositivo: reconexión autorizada
-                    s.setEstadoSesion(EstadoSesion.INICIADA);
-                    if (conexionInfo != null) {
-                        s.setConexion(conexionInfo);
-                    }
-                    s.asegurarClaveSesion();            // una sesión anterior a este cambio recibe su clave al reanudarse
-                    sesionSupervisionRepository.save(s);
-
-                    try {
-                        java.util.Map<String, String> evento = new java.util.HashMap<>();
-                        evento.put("tipoEvento", "ESTUDIANTE_UNIDO");
-                        evento.put("sesionId", s.getSesionId());
-                        evento.put("estudianteId", s.getEstudianteId());
-                        webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + s.getExamenId(), evento);
-                    } catch (Exception e) {}
-                    return s; // Reutiliza la sesion si ya estaba adentro en el mismo equipo
-                } else if (s.getEstadoSesion() == EstadoSesion.FINALIZADA || s.getEstadoSesion() == EstadoSesion.ANULADA || s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
-                    intentosCompletados++;
-                    
-                    // Si fue anulada por fraude o esta en revision, activamos la bandera de bloqueo
-                    if (s.getEstadoSesion() == EstadoSesion.ANULADA) {
-                        accesoBloqueado = true;
-                        motivoBloqueo = "Tu examen previo fue anulado por faltas al reglamento.";
-                    } else if (s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
-                        accesoBloqueado = true;
-                        motivoBloqueo = "Tu solicitud de Segunda Revision se encuentra en proceso.";
+                            java.util.Map<String, String> evento = new java.util.HashMap<>();
+                            evento.put("tipoEvento", "ESTUDIANTE_UNIDO");
+                            evento.put("sesionId", s.getSesionId());
+                            evento.put("estudianteId", s.getEstudianteId());
+                            webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + s.getExamenId(), evento);
+                        } catch (Exception e) {}
+                        return s; // Reutiliza la sesion si ya estaba adentro en el mismo equipo
+                    } else if (s.getEstadoSesion() == EstadoSesion.FINALIZADA || s.getEstadoSesion() == EstadoSesion.ANULADA || s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
+                        intentosCompletados++;
+                        
+                        // Si fue anulada por fraude o esta en revision, activamos la bandera de bloqueo
+                        if (s.getEstadoSesion() == EstadoSesion.ANULADA) {
+                            accesoBloqueado = true;
+                            motivoBloqueo = "Tu examen previo fue anulado por faltas al reglamento.";
+                        } else if (s.getEstadoSesion() == EstadoSesion.APELACION_CURSO) {
+                            accesoBloqueado = true;
+                            motivoBloqueo = "Tu solicitud de Segunda Revision se encuentra en proceso.";
+                        }
                     }
                 }
             }
-        }
-        
-        // --- NUEVAS VALIDACIONES: REINTENTOS Y BLOQUEOS DE SEGURIDAD ---
-        if (accesoBloqueado) {
-             throw new ErrorNegocioException("Acceso denegado: " + motivoBloqueo);
-        }
-        
-        if (examen.getConfiguracionExamen() != null) {
-            Integer maxIntentosCfg = examen.getConfiguracionExamen().getIntentosMaximos();
-            Integer reintentosRedCfg = examen.getConfiguracionExamen().getPermitirReintentos();
-            Integer limiteIntentos = maxIntentosCfg != null
-                    ? Math.max(1, maxIntentosCfg)
-                    : (reintentosRedCfg != null ? Math.max(1, reintentosRedCfg) : null);
-            if (limiteIntentos != null && intentosCompletados >= limiteIntentos) {
-                 throw new ErrorNegocioException("Has alcanzado el limite maximo de intentos permitidos.");
+            
+            // --- NUEVAS VALIDACIONES: REINTENTOS Y BLOQUEOS DE SEGURIDAD ---
+            if (accesoBloqueado) {
+                 throw new ErrorNegocioException("Acceso denegado: " + motivoBloqueo);
             }
+            
+            if (examen.getConfiguracionExamen() != null) {
+                Integer maxIntentosCfg = examen.getConfiguracionExamen().getIntentosMaximos();
+                Integer reintentosRedCfg = examen.getConfiguracionExamen().getPermitirReintentos();
+                Integer limiteIntentos = null;
+                if (maxIntentosCfg != null) {
+                    limiteIntentos = Math.max(1, maxIntentosCfg);
+                } else if (reintentosRedCfg != null) {
+                    limiteIntentos = Math.max(1, reintentosRedCfg);
+                }
+                if (limiteIntentos != null && intentosCompletados >= limiteIntentos) {
+                     throw new ErrorNegocioException("Has alcanzado el limite maximo de intentos permitidos.");
+                }
+            }
+            // Sesiones anteriores del estudiante (de cualquier examen), antes de crear esta: para detectar primer examen / equipo nuevo
+            List<SesionSupervision> sesionesDelEstudiante = sesionSupervisionRepository.findAllByEstudianteId(estudiante.getEstudianteId());
+            SesionSupervision nuevaSesion = new SesionSupervision();
+            nuevaSesion.setExamenId(examen.getCodigoExamen());
+            nuevaSesion.setEstudianteId(estudiante.getEstudianteId());
+            nuevaSesion.setConexion(conexionInfo);
+            nuevaSesion.setEstadoSesion(EstadoSesion.INICIADA);
+            nuevaSesion.setUltimoHeartbeat(LocalDateTime.now());
+            nuevaSesion.asegurarClaveSesion();          // clave propia de esta sesión (ya no hay una clave fija para todos)
+
+            //Se guarda todo en la base de datos
+            SesionSupervision guardada = sesionSupervisionRepository.save(nuevaSesion);
+            
+            try {
+                java.util.Map<String, String> evento = new java.util.HashMap<>();
+                evento.put("tipoEvento", "ESTUDIANTE_UNIDO");
+                evento.put("sesionId", guardada.getSesionId());
+                evento.put("estudianteId", guardada.getEstudianteId());
+                webSocketMessagingTemplate.convertAndSend(
+                    "/topic/alertas/" + guardada.getExamenId(),
+                    evento
+                );
+            } catch (Exception e) {}
+
+            avisarEquipo(guardada.getSesionId(), evaluarEquipo(sesionesDelEstudiante, conexionInfo != null ? conexionInfo.getDeviceId() : null));
+            
+            return guardada;
         }
-        // Sesiones anteriores del estudiante (de cualquier examen), antes de crear esta: para detectar primer examen / equipo nuevo
-        List<SesionSupervision> sesionesDelEstudiante = sesionSupervisionRepository.findAllByEstudianteId(estudiante.getEstudianteId());
-        SesionSupervision nuevaSesion = new SesionSupervision();
-        nuevaSesion.setExamenId(examen.getCodigoExamen());
-        nuevaSesion.setEstudianteId(estudiante.getEstudianteId());
-        nuevaSesion.setConexion(conexionInfo);
-        nuevaSesion.setEstadoSesion(EstadoSesion.INICIADA);
-        nuevaSesion.asegurarClaveSesion();          // clave propia de esta sesión (ya no hay una clave fija para todos)
-
-        //Se guarda todo en la base de datos
-        SesionSupervision guardada = sesionSupervisionRepository.save(nuevaSesion);
-        
-        try {
-            java.util.Map<String, String> evento = new java.util.HashMap<>();
-            evento.put("tipoEvento", "ESTUDIANTE_UNIDO");
-            evento.put("sesionId", guardada.getSesionId());
-            evento.put("estudianteId", guardada.getEstudianteId());
-            webSocketMessagingTemplate.convertAndSend(
-                "/topic/alertas/" + guardada.getExamenId(),
-                evento
-            );
-        } catch (Exception e) {}
-
-        avisarEquipo(guardada.getSesionId(), evaluarEquipo(sesionesDelEstudiante, conexionInfo != null ? conexionInfo.getDeviceId() : null));
-        
-        return guardada;
     }
 
     /**
@@ -335,7 +368,22 @@ public class SesionSupervisionService {
         return resp;
     }
 
-    public void registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
+    private String formatearNombreEstudiante(String estudianteId) {
+        if (estudianteId == null) {
+            return "Desconocido";
+        }
+        var est = estudianteRepository.findById(estudianteId).orElse(null);
+        if (est == null) {
+            return "Desconocido";
+        }
+        String nombre = ((est.getNombre() != null ? est.getNombre() : "")
+                + " "
+                + (est.getApellidos() != null ? est.getApellidos() : "")).trim();
+        nombre = nombre.replaceAll("[\\\\/:*?\"<>|]", "_").replaceAll("\\s+", " ").trim();
+        return nombre.isEmpty() ? "Desconocido" : nombre;
+    }
+
+    public AlertaEvidencia registrarAlerta(String sesionId, NuevaAlertaRequest alertaRequest) {
         //La clase decide cómo se guarda la alerta: sin ella (o con un valor desconocido) se rechaza con un mensaje claro
         if (alertaRequest.getClaseAlerta() == null) {
             throw new ErrorNegocioException("claseAlerta ausente o desconocida");
@@ -345,19 +393,39 @@ public class SesionSupervisionService {
             alertaRequest.setNivelRiesgo(com.example.AppSegurity.Enums.NivelRiesgo.MEDIO);
         }
 
-        //Validamos primero que nada que la sesionSupervision exista en la base de datos
+        //Validamos primero que nada que la sesionSupervision exista en la base de datos y no esté cerrada
         SesionSupervision sesionSupervision = sesionSupervisionRepository.findById(sesionId)
                 .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
 
-        com.example.AppSegurity.Models.Examen examen = examenRepository.findById(sesionSupervision.getExamenId())
+        EstadoSesion estadoActual = sesionSupervision.getEstadoSesion();
+        if (estadoActual == EstadoSesion.FINALIZADA
+                || estadoActual == EstadoSesion.ANULADA
+                || estadoActual == EstadoSesion.APELACION_CURSO) {
+            throw new ErrorNegocioException("La sesión ya finalizó o fue cerrada");
+        }
+
+        String idCliente = alertaRequest.getIdCliente() == null ? null : alertaRequest.getIdCliente().strip();
+        if (idCliente != null && !idCliente.isEmpty()) {
+            synchronized (candadoDe(locksAlertaSesion, sesionId)) {
+                var existente = alertaEvidenciaRepository.findFirstBySesionIdAndIdCliente(sesionId, idCliente);
+                if (existente.isPresent()) {
+                    return existente.get();
+                }
+                return persistirYNofificarAlerta(sesionId, alertaRequest, sesionSupervision, idCliente);
+            }
+        }
+        return persistirYNofificarAlerta(sesionId, alertaRequest, sesionSupervision, null);
+    }
+
+    private AlertaEvidencia persistirYNofificarAlerta(
+            String sesionId,
+            NuevaAlertaRequest alertaRequest,
+            SesionSupervision sesionSupervision,
+            String idCliente) {
+        examenRepository.findById(sesionSupervision.getExamenId())
                 .orElseThrow(() -> new ErrorNegocioException("El examen no existe"));
 
-        String nombreEstudiante = "Desconocido";
-        var est = estudianteRepository.findById(sesionSupervision.getEstudianteId()).orElse(null);
-        if (est != null) {
-            nombreEstudiante = est.getNombre() + "_" + est.getApellidos();
-            nombreEstudiante = nombreEstudiante.replaceAll("[^a-zA-Z0-9_-]", "_");
-        }
+        String nombreEstudianteBonito = formatearNombreEstudiante(sesionSupervision.getEstudianteId());
 
         AlertaEvidencia alertaGuardar = null;
 
@@ -407,6 +475,7 @@ public class SesionSupervisionService {
             alertaGuardar.setHashWebcam(alertaRequest.getHashWebcam());
             alertaGuardar.setHashPantalla(alertaRequest.getHashPantalla());
             alertaGuardar.setHashAudio(alertaRequest.getHashAudio());
+            alertaGuardar.setIdCliente(idCliente);
             // Explicación en texto: sin espacios sobrantes y con un tope, para que nadie llene la base con textos enormes
             String detalleAlerta = alertaRequest.getDetalle() == null ? "" : alertaRequest.getDetalle().strip();
             alertaGuardar.setDetalle(detalleAlerta.isEmpty() ? null : detalleAlerta.substring(0, Math.min(detalleAlerta.length(), 600)));
@@ -420,7 +489,8 @@ public class SesionSupervisionService {
             // Enviar notificacion WebSocket al feed global del profesor
             // El profesor esta suscrito a /topic/alertas/{codigoExamen}
             try {
-                alertaGuardar.setNombreEstudiante(nombreEstudiante.replace("_", " ")); // Formato bonito
+                alertaGuardar.setNombreEstudiante(nombreEstudianteBonito); // Formato bonito
+                alertaGuardar.setEsRetransmision(false);
                 // Attach transient base64 for real-time bypass
                 alertaGuardar.setBase64WebcamTransient(alertaRequest.getUrlFotoWebcam());
                 alertaGuardar.setBase64PantallaTransient(alertaRequest.getUrlCapturaPantalla());
@@ -434,11 +504,41 @@ public class SesionSupervisionService {
                 // Ignorar error de WS
             }
 
+            return alertaGuardar;
+
         } //En caso de que venga null reportamos una excepción
         else {
             throw new ErrorNegocioException("La alerta vino vacia");
         }
 
+    }
+
+    public boolean tieneReceptorActivoParaSesion(String sesionId) {
+        SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
+        return registroSuscripcionesAlertas.hayReceptorActivo(sesion.getExamenId());
+    }
+
+    public boolean retransmitirEvidencia(String sesionId, String alertaId, RetransmitirEvidenciaRequest req) {
+        SesionSupervision sesion = sesionSupervisionRepository.findById(sesionId)
+                .orElseThrow(() -> new ErrorNegocioException("La sesión no existe"));
+        AlertaEvidencia alerta = alertaEvidenciaRepository.findById(alertaId)
+                .orElseThrow(() -> new ErrorNegocioException("La alerta no existe"));
+        if (!sesionId.equals(alerta.getSesionId())) {
+            throw new ErrorNegocioException("La alerta no pertenece a la sesión");
+        }
+        if (!registroSuscripcionesAlertas.hayReceptorActivo(sesion.getExamenId())) {
+            return false;
+        }
+        alerta.setNombreEstudiante(formatearNombreEstudiante(sesion.getEstudianteId()));
+        alerta.setEsRetransmision(true);
+        if (req != null) {
+            alerta.setBase64WebcamTransient(req.getUrlFotoWebcam());
+            alerta.setBase64PantallaTransient(req.getUrlCapturaPantalla());
+            alerta.setBase64AudioTransient(req.getUrlAudio());
+        }
+        webSocketMessagingTemplate.convertAndSend("/topic/alertas/" + sesion.getExamenId(), alerta);
+        return true;
     }
 
     public void finalizarSesion(String idSesion) {
@@ -456,6 +556,9 @@ public class SesionSupervisionService {
 
         //Se guarda el cambio en la base de datos MongoDB
         sesionSupervisionRepository.save(sesionSupervision);
+        if (stompAutorizacionInterceptor != null) {
+            stompAutorizacionInterceptor.invalidarSesion(idSesion);
+        }
     }
 
     public List<AlertaEvidencia> obtenerHistorialAlertas(String sesionId) {
@@ -570,14 +673,17 @@ public class SesionSupervisionService {
             List<AlertaEvidencia> alertas = alertasPorSesion.getOrDefault(s.getSesionId(), java.util.Collections.emptyList());
             s.setCantidadAlertas(alertas.size());
             
-            // Calcular integridad dinámica basada en las alertas
+            // Calcular integridad dinámica basada en las alertas reales (sin penalizar avisos informativos ni resúmenes)
             int descuento = 0;
             for (AlertaEvidencia alerta : alertas) {
+                if (!cuentaParaIntegridad(alerta)) {
+                    continue;
+                }
                 if (alerta.getNivelRiesgo() == NivelRiesgo.BAJO) {
                     descuento += 5;
                 } else if (alerta.getNivelRiesgo() == NivelRiesgo.MEDIO) {
                     descuento += 15;
-                } else if (alerta.getNivelRiesgo() == NivelRiesgo.ALTO) {
+                } else if (alerta.getNivelRiesgo() == NivelRiesgo.ALTO || alerta.getNivelRiesgo() == NivelRiesgo.CRITICO) {
                     descuento += 30;
                 }
             }
@@ -586,6 +692,24 @@ public class SesionSupervisionService {
         }
         
         return sesiones;
+    }
+
+    private static final java.util.Set<String> EVENTOS_INFORMATIVOS_INTEGRIDAD = java.util.Set.of(
+            "PRIMER_EXAMEN_DEL_ESTUDIANTE",
+            "EQUIPO_NUEVO_PARA_EL_ESTUDIANTE",
+            "CONEXION_PERDIDA",
+            "CONEXION_RESTABLECIDA",
+            "RESUMEN_COMPORTAMIENTO"
+    );
+
+    private static boolean cuentaParaIntegridad(AlertaEvidencia alerta) {
+        if (alerta instanceof AlertaProceso proc) {
+            String nombre = proc.getNombreProceso();
+            if (nombre != null && EVENTOS_INFORMATIVOS_INTEGRIDAD.contains(nombre.toUpperCase())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public SesionSupervision registrarHeartbeat(String sesionId, String deviceId) {
@@ -597,6 +721,8 @@ public class SesionSupervisionService {
                 throw new ErrorNegocioException("Dispositivo no autorizado para esta sesión");
             }
         }
+        sesion.setUltimoHeartbeat(LocalDateTime.now());
+        sesionSupervisionRepository.save(sesion);
         return sesion;
     }
 

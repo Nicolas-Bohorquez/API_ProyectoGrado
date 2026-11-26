@@ -1,6 +1,7 @@
 package com.example.AppSegurity.Controllers;
 
 import com.example.AppSegurity.DTO.ConfigurarExamenRequest;
+import com.example.AppSegurity.DTO.CrearExamenRequest;
 import com.example.AppSegurity.Models.Examen;
 import com.example.AppSegurity.Security.ErrorNegocioException;
 import com.example.AppSegurity.Services.ExamenService;
@@ -36,7 +37,7 @@ public class ExamenController {
 
     //Metodos Post
     @PostMapping("/crearExamen")
-    public ResponseEntity<?> crearExamen(@RequestBody Examen peticionExamen, org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<?> crearExamen(@Valid @RequestBody CrearExamenRequest peticionExamen, org.springframework.security.core.Authentication authentication) {
         autorizacion.exigirMismoProfesor(authentication, peticionExamen.getProfesorId());      // solo puede crear exámenes a su nombre
         try {
             //Creamos el examen y lo guardamos en una variable Examen

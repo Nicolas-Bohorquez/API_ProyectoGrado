@@ -1,5 +1,7 @@
 package com.example.AppSegurity.Config;
 
+import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -13,10 +15,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @org.springframework.beans.factory.annotation.Autowired
     private StompAutorizacionInterceptor stompAutorizacion;
 
+    @Value("${app.ws.allowed-origin-patterns:https://*.up.railway.app,http://localhost:*,http://127.0.0.1:*,https://localhost:*}")
+    private String allowedOriginPatterns;
+
     // Cada mensaje que envía un cliente (conectar, suscribirse, publicar) pasa antes por la autorización por propiedad
     @Override
     public void configureClientInboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
         registration.interceptors(stompAutorizacion);
+        registration.taskExecutor()
+                .corePoolSize(4)
+                .maxPoolSize(16)
+                .queueCapacity(500);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(org.springframework.messaging.simp.config.ChannelRegistration registration) {
+        registration.taskExecutor()
+                .corePoolSize(4)
+                .maxPoolSize(16)
+                .queueCapacity(1000);
     }
 
     @Override
@@ -28,9 +45,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // A esta ruta URL se conectará el PyQt6 del profesor para abrir el túnel
+        String[] origenes = Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
+        // A esta ruta URL se conectará el cliente PyQt6 para abrir el túnel
         registry.addEndpoint("/ws-supervision")
-                .setAllowedOriginPatterns("*"); // Permite conexión externa
+                .setAllowedOriginPatterns(origenes);
     }
 
     @Override

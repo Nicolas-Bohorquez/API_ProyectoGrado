@@ -62,6 +62,10 @@ public class NuevaAlertaRequest {
     private String combinacionTeclas;
     @Size(max = 500)
     private String patronSospechoso;
+
+    // Identificador opcional del cliente para evitar duplicados ante reintentos de red
+    @Size(max = 100)
+    private String idCliente;
     
     //Constructor sin parametros
     public NuevaAlertaRequest(){

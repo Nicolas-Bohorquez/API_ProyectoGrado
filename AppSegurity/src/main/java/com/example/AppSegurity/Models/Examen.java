@@ -19,7 +19,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "examen")
 @CompoundIndexes({
-    @CompoundIndex(name = "idx_examen_pin", def = "{'controlAcceso.pinSesion': 1}"),
+    @CompoundIndex(name = "idx_examen_pin_unico", def = "{'controlAcceso.pinSesion': 1}", unique = true, sparse = true),
     @CompoundIndex(name = "idx_examen_estado_fin", def = "{'controlAcceso.estadoPin': 1, 'fechaExamen.horaFin': 1}")
 })
 public class Examen {

@@ -57,6 +57,10 @@ public class CuentaController {
             }
             est.setPasswordHash(passwordEncoder.encode(nueva));
             est.setClaveTemporal(false);
+            if (est.getSeguridadJwt() == null) {
+                est.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+            }
+            est.getSeguridadJwt().incrementarVersionToken();
             estudianteRepository.save(est);
             limitador.registrarExito(clave);
             return ResponseEntity.ok(Map.of("exito", true, "mensaje", "Clave actualizada."));

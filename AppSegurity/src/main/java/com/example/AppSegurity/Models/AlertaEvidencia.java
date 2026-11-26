@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -14,7 +15,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Getter
 @Setter
 @Document(collection = "alerta_evidencia")
-@CompoundIndex(name = "idx_alerta_sesion_hora", def = "{'sesionId': 1, 'horaCaptura': 1}")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_alerta_sesion_hora", def = "{'sesionId': 1, 'horaCaptura': 1}"),
+    @CompoundIndex(name = "idx_alerta_sesion_cliente", def = "{'sesionId': 1, 'idCliente': 1}")
+})
 public class AlertaEvidencia {
     //Parametros de la clase
     @Id
@@ -31,6 +35,7 @@ public class AlertaEvidencia {
     private String hashWebcam;
     private String hashPantalla;
     private String hashAudio;
+    private String idCliente;
     
     
     @org.springframework.data.annotation.Transient
@@ -43,6 +48,8 @@ public class AlertaEvidencia {
     private String base64PantallaTransient;
     @org.springframework.data.annotation.Transient
     private String base64AudioTransient;
+    @org.springframework.data.annotation.Transient
+    private boolean esRetransmision;
 
     public String getBase64WebcamTransient() { return base64WebcamTransient; }
     public void setBase64WebcamTransient(String b) { this.base64WebcamTransient = b; }

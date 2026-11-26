@@ -1,30 +1,47 @@
 package com.example.AppSegurity.Controllers;
 
+import com.example.AppSegurity.Config.StompAutorizacionInterceptor;
+import com.example.AppSegurity.Enums.EstadoSesion;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import java.util.Map;
 
 @Controller
 public class WebSocketController {
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     private com.example.AppSegurity.Repositorys.SesionSupervisionRepository sesionSupervisionRepository;
 
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired(required = false)
+    private StompAutorizacionInterceptor stompAutorizacionInterceptor;
+
     @MessageMapping("/comando/{sesionId}")
-    @SendTo("/topic/comandos/{sesionId}")
-    public Map<String, Object> reenviarComando(@DestinationVariable String sesionId, Map<String, Object> comando) {
-        if (comando != null && "FRAUDE".equals(comando.get("comando"))) {
-            sesionSupervisionRepository.findById(sesionId).ifPresent(sesion -> {
-                var estado = sesion.getEstadoSesion();
-                if (estado != com.example.AppSegurity.Enums.EstadoSesion.FINALIZADA
-                        && estado != com.example.AppSegurity.Enums.EstadoSesion.APELACION_CURSO) {
-                    sesion.setEstadoSesion(com.example.AppSegurity.Enums.EstadoSesion.ANULADA);
-                    sesionSupervisionRepository.save(sesion);
-                }
-            });
+    public void reenviarComando(@DestinationVariable String sesionId, Map<String, Object> comando) {
+        if (comando == null) {
+            return;
         }
-        return comando;
+        if ("FRAUDE".equals(comando.get("comando"))) {
+            var sesionOpt = sesionSupervisionRepository.findById(sesionId);
+            if (sesionOpt.isEmpty()) {
+                return;
+            }
+            var sesion = sesionOpt.get();
+            var estado = sesion.getEstadoSesion();
+            if (estado == EstadoSesion.FINALIZADA || estado == EstadoSesion.APELACION_CURSO) {
+                return;
+            }
+            sesion.setEstadoSesion(EstadoSesion.ANULADA);
+            sesionSupervisionRepository.save(sesion);
+            if (stompAutorizacionInterceptor != null) {
+                stompAutorizacionInterceptor.invalidarSesion(sesionId);
+            }
+        }
+        messagingTemplate.convertAndSend("/topic/comandos/" + sesionId, (Object) comando);
     }
 }

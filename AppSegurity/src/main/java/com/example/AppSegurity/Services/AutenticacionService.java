@@ -56,6 +56,8 @@ public class AutenticacionService {
     private static final long ENFRIAMIENTO_OTP_SEGUNDOS = 60;       // mínimo entre dos solicitudes de código al mismo correo
     // Cuánto tiempo después de expirar un token de acceso aún se acepta refrescarlo (sesión de examen continua)
     private static final long VENTANA_REFRESH_HORAS = resolverVentanaRefresh();
+    // Tope absoluto de vida de una cadena de refresh sin volver a autenticar con contraseña
+    private static final long MAX_CADENA_REFRESH_HORAS = Math.max(VENTANA_REFRESH_HORAS, 24L);
 
     private static long resolverVentanaRefresh() {
         try {
@@ -377,6 +379,10 @@ public class AutenticacionService {
         if (!estudiantes.isEmpty()) {
             for (Estudiante est : estudiantes) {
                 est.setPasswordHash(nuevoHash);
+                if (est.getSeguridadJwt() == null) {
+                    est.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+                }
+                est.getSeguridadJwt().incrementarVersionToken();
                 estudianteRepository.save(est);
             }
             actualizada = true;
@@ -386,6 +392,10 @@ public class AutenticacionService {
             if (profOpt.isPresent()) {
                 Profesor prof = profOpt.get();
                 prof.setPasswordHash(nuevoHash);
+                if (prof.getSeguridadJwt() == null) {
+                    prof.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+                }
+                prof.getSeguridadJwt().incrementarVersionToken();
                 profesorRepository.save(prof);
                 actualizada = true;
                 System.out.println("[RECUPERACIÓN EXITOSA] Contraseña actualizada para docente: " + email);
@@ -485,7 +495,8 @@ public class AutenticacionService {
         }
 
         //Ya con el estudiante validado generamos el token del estudiante
-        String token = jwtProveedor.generarToken(auth);
+        int tokenVersion = estudiante.getSeguridadJwt() != null ? estudiante.getSeguridadJwt().versionActual() : 0;
+        String token = jwtProveedor.generarToken(auth, tokenVersion, System.currentTimeMillis());
 
         //Actualizamos auditoria del estudiante para llevar el registro
         if (estudiante.getAuditoria() == null) {
@@ -517,7 +528,8 @@ public class AutenticacionService {
         }
 
         //Ya con el profesor validado generamos el token del mismo
-        String token = jwtProveedor.generarToken(auth);
+        int tokenVersion = profesor.getSeguridadJwt() != null ? profesor.getSeguridadJwt().versionActual() : 0;
+        String token = jwtProveedor.generarToken(auth, tokenVersion, System.currentTimeMillis());
 
         //Actualizamos auditoria del profesor para llevar el registro
         if (profesor.getAuditoria() == null) {
@@ -547,21 +559,36 @@ public class AutenticacionService {
             throw new RuntimeException("La sesión caducó: inicia sesión de nuevo");
         }
 
-        //Extraemos el email del token viejo
+        //Extraemos el email y datos de revocación/origen del token viejo
         String email = jwtProveedor.extraerEmail(freshTokenViejo);
+        int tokenVersionViejo = jwtProveedor.extraerTokenVersion(freshTokenViejo);
+        Long origIatMs = jwtProveedor.extraerOrigenCadenaMs(freshTokenViejo);
+        if (origIatMs != null && System.currentTimeMillis() - origIatMs > MAX_CADENA_REFRESH_HORAS * 3600_000L) {
+            throw new RuntimeException("La sesión superó el tiempo máximo sin re-autenticación");
+        }
 
-        // Una cuenta suspendida o dada de baja no puede seguir renovando su token
+        // Una cuenta suspendida o dada de baja no puede seguir renovando su token, ni tokens revocados tras cambio de clave
+        int versionActual = 0;
         var profesorRefresh = profesorRepository.findByEmailInstitucional(email)
                 .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(email));
         if (profesorRefresh.isPresent()) {
-            if (profesorRefresh.get().getEstado() != EstadoUsuario.ACTIVO) {
+            Profesor profRef = profesorRefresh.get();
+            if (profRef.getEstado() != EstadoUsuario.ACTIVO) {
                 throw new RuntimeException("La cuenta no está activa");
             }
+            versionActual = profRef.getSeguridadJwt() != null ? profRef.getSeguridadJwt().versionActual() : 0;
         } else {
             var estudiantesRefresh = estudianteRepository.findByEmailIgnoreCase(email);
-            if (!estudiantesRefresh.isEmpty() && estudiantesRefresh.get(0).getEstadoUsuario() != EstadoUsuario.ACTIVO) {
-                throw new RuntimeException("La cuenta no está activa");
+            if (!estudiantesRefresh.isEmpty()) {
+                Estudiante estRef = estudiantesRefresh.get(0);
+                if (estRef.getEstadoUsuario() != EstadoUsuario.ACTIVO) {
+                    throw new RuntimeException("La cuenta no está activa");
+                }
+                versionActual = estRef.getSeguridadJwt() != null ? estRef.getSeguridadJwt().versionActual() : 0;
             }
+        }
+        if (tokenVersionViejo != versionActual) {
+            throw new RuntimeException("El token fue revocado tras actualización de seguridad");
         }
 
         //Buscamos al usuario en la base de datos
@@ -571,8 +598,9 @@ public class AutenticacionService {
         Authentication authTemporal = new UsernamePasswordAuthenticationToken(
                 detallesUsuario, null, detallesUsuario.getAuthorities());
 
-        //generamos el nuevo token y lo retornamos
-        return jwtProveedor.generarToken(authTemporal);
+        //generamos el nuevo token conservando el origen de la cadena de refresh
+        long origenEfectivo = origIatMs != null ? origIatMs : System.currentTimeMillis();
+        return jwtProveedor.generarToken(authTemporal, versionActual, origenEfectivo);
 
     }
 

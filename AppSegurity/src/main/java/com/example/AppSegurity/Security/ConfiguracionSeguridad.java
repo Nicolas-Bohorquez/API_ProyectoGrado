@@ -44,6 +44,8 @@ public class ConfiguracionSeguridad {
                 // Rutas que usa la app del estudiante durante el examen (cualquier usuario autenticado)
                 .requestMatchers(HttpMethod.POST, "/api/supervision/iniciar").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/supervision/*/receptor-activo").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/supervision/*/alerta/*/retransmitir").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/supervision/*/finalizar").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/supervision/*/heartbeat").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/supervision/*/interrumpir").authenticated()

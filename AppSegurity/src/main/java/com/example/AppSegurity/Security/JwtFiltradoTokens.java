@@ -35,10 +35,16 @@ public class JwtFiltradoTokens extends OncePerRequestFilter {
             //2. Si hay token y la JwtProveedor verifica que sea válido
             if (token != null && jwtProveedor.validarToken(token)) {
                 
-                //3. Sacamos el email del dueño del token
+                //3. Sacamos el email y versión del token
                 String email = jwtProveedor.extraerEmail(token);
+                int tokenVersion = jwtProveedor.extraerTokenVersion(token);
 
-                //4. Buscamos a ese usuario en MongoDB (Estudiante o Profesor) usando el servicio
+                //4. Verificamos versión de revocación y cargamos usuario activo
+                if (tokenVersion != userDetailsService.obtenerTokenVersion(email)) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 //5. Creamos la "Credencial" oficial de Spring Security

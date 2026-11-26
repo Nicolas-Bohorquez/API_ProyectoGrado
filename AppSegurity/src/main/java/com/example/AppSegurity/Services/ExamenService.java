@@ -104,8 +104,8 @@ public class ExamenService {
             throw new IllegalStateException("Ya existe un examen con el código " + codigoExamen + ".");
         }
 
-        //Generamos el PIN de manera aleatoria e irrepetible
-        String PIN_aleatorio = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        //Generamos el PIN de manera aleatoria y comprobamos que no colisione con ningún examen existente
+        String PIN_aleatorio = generarPinUnico();
 
         //Creamos control de acceso e introducimos el PIN recien generado
         ControlAcceso controlAcceso = new ControlAcceso();
@@ -138,6 +138,23 @@ public class ExamenService {
         //Se lo enviamos a MongoDB pa que lo guarde
         return examenRepository.save(examen);
 
+    }
+
+    private String generarPinUnico() {
+        java.security.SecureRandom rng = new java.security.SecureRandom();
+        final String alfabeto = "0123456789ABCDEF";
+        for (int intento = 0; intento < 25; intento++) {
+            int longitud = intento < 15 ? 6 : 8;
+            StringBuilder sb = new StringBuilder(longitud);
+            for (int i = 0; i < longitud; i++) {
+                sb.append(alfabeto.charAt(rng.nextInt(alfabeto.length())));
+            }
+            String candidato = sb.toString();
+            if (examenRepository.findFirstByControlAccesoPinSesion(candidato).isEmpty()) {
+                return candidato;
+            }
+        }
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
     }
 
     public Examen configurarDesdeMapa(String codigoExamen, java.util.Map<String, Object> payload) {

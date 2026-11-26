@@ -2,6 +2,7 @@ package com.example.AppSegurity.Repositorys;
 
 import com.example.AppSegurity.Models.AlertaEvidencia;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface AlertaEvidenciaRepository extends MongoRepository<AlertaEvidencia, String>{
@@ -11,4 +12,6 @@ public interface AlertaEvidenciaRepository extends MongoRepository<AlertaEvidenc
     
     //buscar todas las alertas de multiples sesiones
     List<AlertaEvidencia> findBySesionIdInOrderByHoraCapturaDesc(List<String> sesionIds);
+
+    Optional<AlertaEvidencia> findFirstBySesionIdAndIdCliente(String sesionId, String idCliente);
 }

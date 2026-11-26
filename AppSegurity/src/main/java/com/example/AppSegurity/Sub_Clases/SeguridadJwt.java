@@ -13,7 +13,17 @@ public class SeguridadJwt {
     private List<String> tokensActivosRefrescados;
     private LocalDateTime cambioPassword;
     private Integer intentosFallidos;
-    
+    private Integer tokenVersion = 0;
+
+    public int versionActual() {
+        return tokenVersion != null ? tokenVersion : 0;
+    }
+
+    public void incrementarVersionToken() {
+        this.tokenVersion = versionActual() + 1;
+        this.cambioPassword = LocalDateTime.now();
+    }
+
     //Constructor sin parametros
     public SeguridadJwt(){
         

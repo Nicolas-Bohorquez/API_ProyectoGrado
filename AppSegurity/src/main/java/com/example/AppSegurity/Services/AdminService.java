@@ -109,6 +109,12 @@ public class AdminService {
             throw new IllegalArgumentException("No se puede modificar el estado de una cuenta SuperADMIN.");
         }
         prof.setEstado(EstadoUsuario.valueOf(nuevoEstado.toUpperCase().trim()));
+        if (prof.getEstado() != EstadoUsuario.ACTIVO) {
+            if (prof.getSeguridadJwt() == null) {
+                prof.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+            }
+            prof.getSeguridadJwt().incrementarVersionToken();
+        }
         tocarAuditoria(prof);
         profesorRepository.save(prof);
     }
@@ -291,6 +297,10 @@ public class AdminService {
         Profesor prof = obtenerProfesor(codigoProfesor);
         String clave = generarClaveTemporal();
         prof.setPasswordHash(passwordEncoder.encode(clave));
+        if (prof.getSeguridadJwt() == null) {
+            prof.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+        }
+        prof.getSeguridadJwt().incrementarVersionToken();
         tocarAuditoria(prof);
         profesorRepository.save(prof);
         return clave;
@@ -300,6 +310,10 @@ public class AdminService {
         Estudiante est = obtenerEstudiante(estudianteId);
         String clave = generarClaveTemporal();
         est.setPasswordHash(passwordEncoder.encode(clave));
+        if (est.getSeguridadJwt() == null) {
+            est.setSeguridadJwt(new com.example.AppSegurity.Sub_Clases.SeguridadJwt());
+        }
+        est.getSeguridadJwt().incrementarVersionToken();
         tocarAuditoria(est);
         estudianteRepository.save(est);
         return clave;

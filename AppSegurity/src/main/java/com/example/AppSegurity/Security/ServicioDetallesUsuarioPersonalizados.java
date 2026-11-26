@@ -77,4 +77,19 @@ public class ServicioDetallesUsuarioPersonalizados implements UserDetailsService
         //3. Si no existe ni en profesores ni en estudiantes, entonces no está registrado
         throw new UsernameNotFoundException("Usuario no encontrado con el email: " + email);
     }
+
+    public int obtenerTokenVersion(String email) {
+        Profesor profesor = profesorRepository.findByEmailInstitucional(email)
+                .or(() -> profesorRepository.findByEmailInstitucionalIgnoreCase(email))
+                .orElse(null);
+        if (profesor != null) {
+            return profesor.getSeguridadJwt() != null ? profesor.getSeguridadJwt().versionActual() : 0;
+        }
+        java.util.List<Estudiante> estudiantes = estudianteRepository.findByEmailIgnoreCase(email);
+        if (!estudiantes.isEmpty()) {
+            Estudiante est = estudiantes.get(0);
+            return est.getSeguridadJwt() != null ? est.getSeguridadJwt().versionActual() : 0;
+        }
+        return 0;
+    }
 }
